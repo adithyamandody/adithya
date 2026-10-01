@@ -1,0 +1,220 @@
+/* Tests for the live scan state machine.  node app/test/session.test.mjs
+ *
+ * The one that matters: the LIVE counters must agree exactly with the OFFLINE
+ * simulate(). If they ever diverge, the press counter on the demo table is
+ * telling a judge a different number from the one in the paper.
+ *
+ * The session is driven with an injected clock and a synchronous scheduler, so
+ * these run in milliseconds and are fully deterministic.
+ */
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { ScanSession, treeFor, leaves, codeOf, simulate, classOf } from '../scan.js';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const read = n => JSON.parse(readFileSync(join(here, '..', 'data', n), 'utf8'));
+const D = {
+  units: read('units.json'), bigrams: read('bigrams.json'),
+  legal: read('legal.json'), grid: read('gridA.json'),
+};
+
+let pass = 0, fail = 0;
+const t = (name, fn) => {
+  try { fn(); pass++; console.log(`  ok   ${name}`); }
+  catch (e) { fail++; console.log(`  FAIL ${name}\n       ${e.message}`); }
+};
+const eq = (a, b, m = '') => {
+  if (a !== b) throw new Error(`${m} expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`);
+};
+const ok = (c, m) => { if (!c) throw new Error(m); };
+
+/** Drive a session to completion. `wants` decides whether to press on each
+ *  frame. Returns what was emitted plus the counters. */
+function drive({ mode, ctx = 'SP', wants, period = 800, maxFrames = 400 }) {
+  let clock = 0;
+  const queue = [];
+  let emitted = null;
+  const frames = [];
+
+  const s = new ScanSession({
+    mode, period, data: D,
+    context: () => ctx,
+    onFrame: f => frames.push(f),
+    onEmit: id => { emitted = id; },
+    now: () => clock,
+    schedule: fn => queue.push(fn),
+  });
+  s.begin();
+
+  let n = 0;
+  while (queue.length && emitted === null && n++ < maxFrames) {
+    // Decide before the tick whether this highlighted frame is the one we want
+    const f = frames[frames.length - 1];
+    if (f && wants(f)) s.press();
+    else clock += period;                 // let it time out
+    queue.shift()();
+  }
+  return { emitted, presses: s.presses, steps: s.steps, frames, session: s };
+}
+
+console.log('\nmode B — constrained tree');
+
+t('never pressing still terminates, at a leaf', () => {
+  const r = drive({ mode: 'B', wants: () => false });
+  ok(r.emitted, 'nothing emitted');
+  eq(r.presses, 0, 'presses');
+  ok(D.legal.SP.includes(r.emitted), 'emitted an illegal unit');
+});
+
+t('an illegal unit can never be emitted, whatever you press', () => {
+  for (const ctx of Object.keys(D.legal)) {
+    const legal = new Set(D.legal[ctx]);
+    for (const style of [() => true, () => false, (() => { let i = 0; return () => i++ % 2 === 0; })()]) {
+      const r = drive({ mode: 'B', ctx, wants: style });
+      ok(legal.has(r.emitted), `${ctx} emitted illegal ${r.emitted}`);
+    }
+  }
+});
+
+t('targeting a unit emits exactly that unit', () => {
+  for (const target of ['ka', 'na', 'v_aa', 'ctl_undo']) {    // all legal after a space
+    const r = drive({ mode: 'B', wants: f => f.hot.includes(target) });
+    eq(r.emitted, target, `target ${target}:`);
+  }
+});
+
+t('every legal unit in every context is reachable by targeting it', () => {
+  for (const ctx of Object.keys(D.legal)) {
+    for (const target of D.legal[ctx]) {
+      const r = drive({ mode: 'B', ctx, wants: f => f.hot.includes(target) });
+      eq(r.emitted, target, `${ctx} → ${target}:`);
+    }
+  }
+});
+
+t('undo and clear stay reachable from every context', () => {
+  for (const ctx of Object.keys(D.legal)) {
+    for (const c of ['ctl_undo', 'ctl_clear']) {
+      ok(D.legal[ctx].includes(c), `${c} unreachable from ${ctx} — the user would be stuck`);
+      const r = drive({ mode: 'B', ctx, wants: f => f.hot.includes(c) });
+      eq(r.emitted, c, `${ctx} → ${c}:`);
+    }
+  }
+});
+
+/* A space cannot follow a space, so p_sp is absent from the SP tree. That is
+   the model working, not a bug — but it is worth pinning down, because it also
+   means punctuation cannot directly follow a space. Natural order (word, then
+   full stop, then space) is unaffected. */
+t('a space cannot follow a space — illegal by design, and enforced', () => {
+  ok(!D.legal.SP.includes('p_sp'), 'SP→SP should be illegal');
+  const r = drive({ mode: 'B', ctx: 'SP', wants: f => f.hot.includes('p_sp') });
+  ok(r.emitted !== 'p_sp', 'emitted a space after a space');
+  ok(D.legal.C.includes('p_sp'), 'but a space MUST be typable after a consonant');
+});
+
+t('LIVE counters equal OFFLINE codeOf() — the invariant that matters', () => {
+  const tree = treeFor(D, 'SP');
+  for (const target of D.legal.SP) {
+    const live = drive({ mode: 'B', wants: f => f.hot.includes(target) });
+    const off = codeOf(tree, target);
+    eq(live.steps, off.steps, `${target} steps:`);
+    eq(live.presses, off.presses, `${target} presses:`);
+  }
+});
+
+t('every frame highlights a strict subset of what is still live', () => {
+  const r = drive({ mode: 'B', wants: f => f.hot.includes('na') });
+  for (const f of r.frames) {
+    ok(f.hot.length > 0, 'empty highlight');
+    ok(f.hot.length < f.live.length || f.live.length === 1, 'highlight is not a subset');
+    const live = new Set(f.live);
+    for (const h of f.hot) ok(live.has(h), `${h} highlighted but not live`);
+  }
+});
+
+t('the live set shrinks monotonically', () => {
+  const r = drive({ mode: 'B', wants: f => f.hot.includes('ka') });
+  for (let i = 1; i < r.frames.length; i++) {
+    ok(r.frames[i].live.length < r.frames[i - 1].live.length,
+       `frame ${i}: ${r.frames[i - 1].live.length} → ${r.frames[i].live.length}`);
+  }
+});
+
+t('stop() halts the machine', () => {
+  let clock = 0; const queue = [];
+  const s = new ScanSession({
+    mode: 'B', period: 800, data: D, context: () => 'SP',
+    now: () => clock, schedule: fn => queue.push(fn),
+  });
+  s.begin();
+  const at = s.steps;
+  s.stop();
+  clock += 10000;
+  while (queue.length) queue.shift()();
+  eq(s.steps, at, 'steps advanced after stop');
+});
+
+console.log('\nmode A — row–column baseline');
+
+t('always costs exactly 2 presses', () => {
+  const r = drive({
+    mode: 'A',
+    wants: f => f.phase === 'row'
+      ? Math.floor(D.grid.order.indexOf('ka') / f.cols) === f.r
+      : D.grid.order.indexOf('ka') % f.cols === f.c,
+  });
+  eq(r.emitted, 'ka');
+  eq(r.presses, 2);
+});
+
+t('LIVE steps equal the (row+1)+(col+1) formula used offline', () => {
+  for (const target of ['v_a', 'ka', 'na', 's_oo', 'p_sp', 'ctl_clear']) {
+    const i = D.grid.order.indexOf(target);
+    const row = Math.floor(i / D.grid.cols), col = i % D.grid.cols;
+    const r = drive({
+      mode: 'A',
+      wants: f => f.phase === 'row' ? f.r === row : f.c === col,
+    });
+    eq(r.emitted, target, `${target} emitted:`);
+    eq(r.steps, (row + 1) + (col + 1), `${target} steps:`);
+  }
+});
+
+t('the row scan wraps around instead of running off the end', () => {
+  const r = drive({ mode: 'A', wants: () => false, maxFrames: 60 });
+  const rows = r.frames.filter(f => f.phase === 'row').map(f => f.r);
+  ok(rows.includes(0) && Math.max(...rows) === Math.ceil(D.grid.order.length / D.grid.cols) - 1,
+     `rows seen: ${[...new Set(rows)].join(',')}`);
+  ok(rows.lastIndexOf(0) > rows.indexOf(0), 'never wrapped back to row 0');
+});
+
+console.log('\nwhole sentence — live vs offline');
+
+t('driving the full sample sentence reproduces simulate() exactly', () => {
+  const SAMPLE = ['na', 's_ii', 'p_sp', 'sa', 's_u', 'kha', 'x_anu',
+                  'p_sp', 'v_aa', 'nna', 's_oo'];
+  for (const mode of ['A', 'B']) {
+    let ctx = 'SP', steps = 0, presses = 0;
+    for (const target of SAMPLE) {
+      const i = D.grid.order.indexOf(target);
+      const row = Math.floor(i / D.grid.cols), col = i % D.grid.cols;
+      const r = drive({
+        mode, ctx,
+        wants: f => mode === 'B'
+          ? f.hot.includes(target)
+          : (f.phase === 'row' ? f.r === row : f.c === col),
+      });
+      eq(r.emitted, target, `${mode}/${target}:`);
+      steps += r.steps; presses += r.presses;
+      ctx = classOf(D, target);
+    }
+    const off = simulate(D, SAMPLE, mode);
+    eq(steps, off.steps, `${mode} total steps:`);
+    eq(presses, off.presses, `${mode} total presses:`);
+  }
+});
+
+console.log(`\n${pass} passed, ${fail} failed\n`);
+process.exit(fail ? 1 : 0);

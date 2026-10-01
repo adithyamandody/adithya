@@ -92,6 +92,114 @@ export function simulate(D, ids, mode) {
   return { presses, steps, missing };
 }
 
+/* ═══════════════════════ the scan clock ═══════════════════
+ * The live scanner. `now` and `schedule` are injectable so the state machine
+ * can be driven deterministically in node (test/session.test.mjs) — the live
+ * counters and the offline simulate() must agree exactly, or the counter on
+ * the demo table is lying relative to the numbers in the paper.
+ *
+ * Timing uses now() deltas, never setInterval: that drifts under load, and a
+ * drifting scan period both harms the user (who times their press to the
+ * rhythm) and corrupts the measurement.
+ */
+export class ScanSession {
+  constructor({ mode, period, data, context, onFrame, onEmit, now, schedule }) {
+    this.mode = mode;
+    this.period = period;
+    this.D = data;
+    this.ctx = context || (() => 'SP');
+    this.onFrame = onFrame || (() => {});
+    this.onEmit = onEmit || (() => {});
+    this.now = now || (() => (typeof performance !== 'undefined'
+      ? performance.now() : Date.now()));
+    this.schedule = schedule || (typeof requestAnimationFrame !== 'undefined'
+      ? requestAnimationFrame.bind(globalThis)
+      : (fn => setTimeout(fn, 16)));
+    this.presses = 0;
+    this.steps = 0;
+    this.t0 = this.now();
+    this.pressed = false;
+    this.running = false;
+  }
+
+  press() { this.pressed = true; }
+  stop() { this.running = false; }
+
+  begin() {
+    this.running = true;
+    if (this.mode === 'B') {
+      this.node = treeFor(this.D, this.ctx());
+      if (!this.node) { this.running = false; return; }
+      if (this.node.unit) { this.running = false; this.onEmit(this.node.unit); return; }
+    } else {
+      this.order = this.D.grid.order;
+      this.cols = this.D.grid.cols;
+      this.rows = Math.ceil(this.order.length / this.cols);
+      this.phase = 'row';
+      this.r = 0;
+      this.c = 0;
+    }
+    this._step();
+  }
+
+  _step() {
+    this.steps++;
+    this.tStep = this.now();
+    this.onFrame(this.frame());
+    this.schedule(() => this._tick());
+  }
+
+  _tick() {
+    if (!this.running) return;
+    if (this.pressed) {
+      this.pressed = false;
+      this.presses++;
+      this._advance(true);
+    } else if (this.now() - this.tStep >= this.period) {
+      this._advance(false);
+    } else {
+      this.schedule(() => this._tick());
+    }
+  }
+
+  _advance(tookIt) {
+    if (this.mode === 'B') {
+      this.node = tookIt ? this.node.hi : this.node.lo;
+      if (this.node.unit) { this.running = false; this.onEmit(this.node.unit); return; }
+      this._step();
+      return;
+    }
+    if (this.phase === 'row') {
+      if (tookIt) { this.phase = 'col'; this.c = 0; }
+      else this.r = (this.r + 1) % this.rows;
+      this._step();
+      return;
+    }
+    if (tookIt) {
+      const id = this.order[this.r * this.cols + this.c];
+      this.running = false;
+      if (id) this.onEmit(id);
+      return;
+    }
+    this.c++;
+    if (this.c >= this.cols || this.r * this.cols + this.c >= this.order.length) {
+      this.c = 0;
+      this.phase = 'row';            // fell off the end of the row
+    }
+    this._step();
+  }
+
+  frame() {
+    if (this.mode === 'B') {
+      return { mode: 'B', live: leaves(this.node), hot: leaves(this.node.hi) };
+    }
+    return {
+      mode: 'A', order: this.order, cols: this.cols,
+      phase: this.phase, r: this.r, c: this.c,
+    };
+  }
+}
+
 /** Decompose a Malayalam string into unit ids, longest-match first. */
 export function decompose(D, text) {
   const byChar = {};

@@ -10,7 +10,7 @@
  */
 'use strict';
 
-import { buildTree, treeFor, leaves, simulate, classOf } from './scan.js';
+import { ScanSession, simulate } from './scan.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -51,105 +51,6 @@ function context() {
   return D.legal[c] ? c : 'SP';
 }
 
-/* ═══════════════════════ the scan clock ═══════════════════
- * performance.now() deltas via requestAnimationFrame — never setInterval,
- * which drifts under load. Switch users time their press to the rhythm, so
- * drift harms the user AND corrupts the measurement.
- */
-
-class ScanSession {
-  constructor({ mode, period, onFrame, onEmit }) {
-    this.mode = mode;
-    this.period = period;
-    this.onFrame = onFrame;
-    this.onEmit = onEmit;
-    this.presses = 0;
-    this.steps = 0;
-    this.t0 = performance.now();
-    this.pressed = false;
-    this.running = false;
-  }
-
-  press() { this.pressed = true; }
-  stop() { this.running = false; }
-
-  begin() {
-    this.running = true;
-    if (this.mode === 'B') this._beginB(); else this._beginA();
-  }
-
-  _tick() {
-    if (!this.running) return;
-    const now = performance.now();
-    if (this.pressed) { this.pressed = false; this.presses++; this._advance(true); }
-    else if (now - this.tStep >= this.period) { this._advance(false); }
-    else requestAnimationFrame(() => this._tick());
-  }
-
-  _step() {                       // show the current highlight, start its clock
-    this.steps++;
-    this.tStep = performance.now();
-    this.onFrame(this.frame());
-    requestAnimationFrame(() => this._tick());
-  }
-
-  /* ---- mode B: descend a constrained Huffman tree ---- */
-  _beginB() {
-    this.tree = treeFor(D, context());
-    this.node = this.tree;
-    if (this.node && this.node.unit) { this.onEmit(this.node.unit); return; }
-    this._step();
-  }
-
-  /* ---- mode A: row–column over a fixed grid ---- */
-  _beginA() {
-    this.order = D.grid.order;
-    this.cols = D.grid.cols;
-    this.rows = Math.ceil(this.order.length / this.cols);
-    this.phase = 'row';
-    this.r = 0;
-    this.c = 0;
-    this._step();
-  }
-
-  _advance(tookIt) {
-    if (this.mode === 'B') {
-      this.node = tookIt ? this.node.hi : this.node.lo;
-      if (this.node.unit) { this.running = false; this.onEmit(this.node.unit); return; }
-      this._step();
-      return;
-    }
-    if (this.phase === 'row') {
-      if (tookIt) { this.phase = 'col'; this.c = 0; }
-      else this.r = (this.r + 1) % this.rows;
-      this._step();
-      return;
-    }
-    const idx = this.r * this.cols + this.c;
-    if (tookIt) {
-      const id = this.order[idx];
-      this.running = false;
-      if (id) this.onEmit(id);
-      return;
-    }
-    this.c++;
-    if (this.c >= this.cols || this.r * this.cols + this.c >= this.order.length) {
-      this.c = 0; this.phase = 'row';      // fell off the row — back to row scan
-    }
-    this._step();
-  }
-
-  frame() {
-    if (this.mode === 'B') {
-      return { mode: 'B', live: leaves(this.node), hot: leaves(this.node.hi) };
-    }
-    return {
-      mode: 'A', order: this.order, cols: this.cols,
-      phase: this.phase, r: this.r, c: this.c,
-    };
-  }
-}
-
 /* ═══════════════════════ compose view ═════════════════════ */
 
 function startScan() {
@@ -158,6 +59,8 @@ function startScan() {
   const sess = new ScanSession({
     mode: S.mode,
     period: S.period,
+    data: D,
+    context,
     onFrame: paintScan,
     onEmit: commit,
   });

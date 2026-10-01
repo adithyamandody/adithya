@@ -86,3 +86,83 @@ corpus sizes is unknown until phase 3 measures it on real text.
 
 **Finding this on 1 October rather than in November is worth more than the result it
 overturned.**
+
+---
+
+# Finding 002 — the constraint does not help under mis-presses either
+
+**Date:** 1 October 2026 · `app/test/error_cost.mjs` · 4000 seeded trials per cell
+
+Finding 001 reframed the claim around error cost. That reframe does not survive
+measurement.
+
+| mis-press rate | soft: wrong / illegal per sentence | hard: wrong / illegal |
+|---|---|---|
+| 0.02 | 1.04 / 0.00 | 1.04 / 0.00 |
+| 0.05 | 2.41 / 0.00 | 2.45 / 0.00 |
+| 0.10 | 4.14 / **0.01** | 4.14 / **0.00** |
+| 0.15 | 5.71 / **0.01** | 5.71 / **0.00** |
+
+The soft model produces **one impossible unit per hundred sentences**. The hard
+constraint produces zero. The difference is real but negligible, and wrong-unit
+counts are identical to two decimal places.
+
+Same mechanism as finding 001: illegal units sit so deep in the soft tree that a
+mis-press almost never lands on one. The property that made the step-count gain
+zero makes the error-cost gain zero too.
+
+---
+
+# Finding 003 — where the value actually is, and it is not the constraint
+
+**Date:** 1 October 2026 · `app/test/zero_resource.mjs`
+
+Decomposing the whole gain on <span lang="ml">നീ സുഖം ആണോ</span>:
+
+| What you know | Corpus needed? | Steps |
+|---|---|---|
+| row–column grid (what ships) | no | **115** |
+| uniform binary tree — *no knowledge at all* | no | 68 |
+| legality only | **no** | 65 |
+| unigram only | yes | 66 |
+| legality + unigram | yes | 62 |
+| full bigram | yes | 50 |
+| bigram + legality (**the proposal**) | yes | **50** |
+
+Read the first two rows carefully. **Nearly the entire win — 115 → 68, about 72%
+of everything achievable — comes from using a binary tree at all, with zero
+knowledge of Malayalam.** That is Huffman, 1952.
+
+Legality then adds 3 steps (≈5% of the achievable gain). A corpus model adds 18
+more. Legality on top of the corpus model adds **nothing**.
+
+## Honest status of the contribution
+
+Three experiments, three negative results, one consistent mechanism: a Huffman
+code already gives improbable symbols long codewords, so forbidding them changes
+almost nothing. As formulated, **"akshara legality as a hard constraint" is not a
+contribution.**
+
+## What survives, and it is not small
+
+- **The akshara tax is real and unmeasured.** 115 → 50 steps is **2.3×**, and
+  nobody has published that figure for any Brahmic script. That is an empirical
+  contribution and the number a judge will care about.
+- **Legality is free.** It needs no corpus — just the grammar of the script,
+  which a linguist writes down in an afternoon. For the ~20 Indian languages
+  with no usable corpus, "legality only" (65) nearly matches "unigram only" (66)
+  while requiring no text at all. That is a **low-resource deployment** claim,
+  not an algorithmic one.
+- **A negative result, properly demonstrated, is a real result.** "I hypothesised
+  that hard constraints would help, built the apparatus, measured it, and they
+  do not — and here is the information-theoretic reason" is better science than
+  most of what appears at a fair.
+
+## Caveat that could overturn all three findings
+
+Every number here comes from the hand-estimated 75-unit model, where the
+scanning unit is a **decomposed** base + sign + virama. BUILD.md's IV4 proposes
+the alternative: whole **akshara clusters**, where the inventory runs to
+thousands and the legality structure is far sharper. The constraint may bite
+much harder there. **Testing IV4 is the highest-value next experiment**, and it
+should happen before the claim is rewritten.
