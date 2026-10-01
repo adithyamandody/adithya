@@ -7,3 +7,18 @@ venv/
 node_modules/
 *.gcode
 out/
+
+# build output — regenerate with `npm run build`
+www/
+
+# Capacitor/Gradle build artifacts
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+android/capacitor-cordova-android-plugins/
+*.apk
+*.aab
+
+# but keep the native project source
+!android/app/src/

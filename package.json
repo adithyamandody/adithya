@@ -1,0 +1,18 @@
+{
+  "name": "aksharascan",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Single-switch Malayalam text entry with a constraint-aware scan tree",
+  "scripts": {
+    "build": "node scripts/build-www.mjs",
+    "test": "node app/test/scan.test.mjs && node app/test/session.test.mjs",
+    "sync": "npm run build && npx cap sync android",
+    "apk": "npm run sync && cd android && ./gradlew assembleDebug",
+    "install": "adb install -r android/app/build/outputs/apk/debug/app-debug.apk"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2"
+  }
+}

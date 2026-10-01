@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AksharaScan</string>
+    <string name="title_activity_main">AksharaScan</string>
+    <string name="package_name">in.aksharascan.app</string>
+    <string name="custom_url_scheme">in.aksharascan.app</string>
+</resources>

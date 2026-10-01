@@ -1,0 +1,12 @@
+{
+  "appId": "in.aksharascan.app",
+  "appName": "AksharaScan",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#0d1117"
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}
