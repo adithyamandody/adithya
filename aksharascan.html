@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AksharaScan</title>
+<style>
+  @page { size: A4; margin: 17mm 16mm 16mm 16mm; }
+
+  :root{
+    --ink:#15181d;
+    --soft:#5a6472;
+    --line:#d9dee5;
+    --accent:#0f5f6b;
+    --accent-bg:#eef6f7;
+    --warm:#8a4b18;
+    --warm-bg:#fdf3ea;
+    --mal:"Malayalam MN","Malayalam Sangam MN","Nirmala UI",serif;
+  }
+
+  *{box-sizing:border-box;}
+  html{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  body{
+    font-family:Charter,Georgia,"Times New Roman",serif;
+    color:var(--ink); font-size:10.4pt; line-height:1.52; margin:0;
+  }
+  .mal{font-family:var(--mal); font-size:1.12em;}
+
+  h1,h2,h3,.kicker,.lede,th,.tag,.num,.chk-h{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;}
+
+  /* ---------- cover ---------- */
+  .cover{border-bottom:2.5px solid var(--ink); padding-bottom:14px; margin-bottom:20px;}
+  .kicker{font-size:8.2pt; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); font-weight:700;}
+  h1{font-size:31pt; line-height:1.02; margin:8px 0 6px; letter-spacing:-.022em; font-weight:750;}
+  h1 .sub{display:block; font-size:12.5pt; font-weight:500; color:var(--soft); letter-spacing:0; margin-top:9px; line-height:1.35;}
+  .meta{font-size:8.6pt; color:var(--soft); margin-top:12px; font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;}
+  .meta b{color:var(--ink);}
+
+  h2{
+    font-size:14pt; margin:26px 0 9px; letter-spacing:-.012em; font-weight:700;
+    padding-bottom:5px; border-bottom:1px solid var(--line); page-break-after:avoid;
+  }
+  h2 .n{color:var(--accent); font-weight:700; margin-right:8px;}
+  h3{font-size:10.8pt; margin:16px 0 5px; font-weight:700; page-break-after:avoid;}
+  p{margin:0 0 9px;}
+  ul,ol{margin:0 0 10px; padding-left:19px;}
+  li{margin-bottom:5px;}
+  strong{font-weight:700;}
+  em{font-style:italic;}
+  a{color:var(--accent); text-decoration:none;}
+  code{font-family:"SF Mono",Menlo,monospace; font-size:.87em; background:#f2f4f7; padding:1px 4px; border-radius:3px;}
+
+  .lede{font-size:11.6pt; line-height:1.45; color:var(--ink); background:var(--accent-bg);
+        border-left:3px solid var(--accent); padding:12px 15px; margin:0 0 18px; page-break-inside:avoid;}
+
+  /* ---------- tables ---------- */
+  table{width:100%; border-collapse:collapse; margin:11px 0 13px; font-size:9.2pt; page-break-inside:avoid;}
+  th{text-align:left; font-size:7.9pt; text-transform:uppercase; letter-spacing:.07em; color:var(--soft);
+     border-bottom:1.5px solid var(--ink); padding:0 7px 5px 0; font-weight:700;}
+  td{padding:7px 7px 7px 0; border-bottom:1px solid var(--line); vertical-align:top;}
+  th:last-child,td:last-child{padding-right:0;}
+  .num{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; font-weight:600;}
+  tr.hero td{background:var(--accent-bg); font-weight:700; color:var(--accent);}
+  tr.dim td{color:var(--soft);}
+
+  /* ---------- callouts ---------- */
+  .box{border:1px solid var(--line); border-radius:5px; padding:12px 14px; margin:13px 0; page-break-inside:avoid;}
+  .box.accent{background:var(--accent-bg); border-color:#bcd8dc;}
+  .box.warm{background:var(--warm-bg); border-color:#e8d2ba;}
+  .box .tag{display:block; font-size:7.9pt; letter-spacing:.11em; text-transform:uppercase; font-weight:700; margin-bottom:5px;}
+  .box.accent .tag{color:var(--accent);}
+  .box.warm .tag{color:var(--warm);}
+  .box p:last-child{margin-bottom:0;}
+
+  .pitch{border:2px solid var(--ink); border-radius:5px; padding:15px 17px; margin:15px 0;
+         font-size:11.3pt; line-height:1.45; page-break-inside:avoid;}
+  .pitch .tag{display:block; font-size:7.9pt; letter-spacing:.11em; text-transform:uppercase;
+              color:var(--soft); font-weight:700; margin-bottom:7px; font-family:-apple-system,sans-serif;}
+
+  /* ---------- checklist ---------- */
+  .chk{border:1.5px solid var(--ink); border-radius:5px; padding:14px 16px; margin:14px 0; page-break-inside:avoid;}
+  .chk-h{font-size:11pt; font-weight:700; margin-bottom:10px;}
+  .chk ol{padding-left:0; list-style:none; margin:0;}
+  .chk li{margin-bottom:9px; padding-left:26px; position:relative; line-height:1.42;}
+  .chk li::before{content:""; position:absolute; left:0; top:2px; width:13px; height:13px;
+                  border:1.5px solid var(--ink); border-radius:2.5px;}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:11px; margin:12px 0;}
+  .card{border:1px solid var(--line); border-radius:5px; padding:11px 13px; page-break-inside:avoid;}
+  .card h4{font-family:-apple-system,sans-serif; font-size:9.6pt; margin:0 0 4px; font-weight:700;}
+  .card p{font-size:9.2pt; margin:0; color:var(--soft); line-height:1.42;}
+
+  .pb{page-break-before:always;}
+  .nobreak{page-break-inside:avoid;}
+  footer{margin-top:26px; padding-top:11px; border-top:1px solid var(--line);
+         font-size:8.4pt; color:var(--soft); font-family:-apple-system,sans-serif;}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="kicker">Science Fair Project Proposal &middot; 2026&ndash;27</div>
+  <h1>AksharaScan
+    <span class="sub">Giving back the keystrokes that Malayalam takes away &mdash; a faster way to type with a single button, for people who have only one movement left.</span>
+  </h1>
+  <div class="meta">
+    Targets: <b>IRIS National Fair</b> (deadline 3 Oct 2026) &rarr; Regeneron ISEF &middot;
+    <b>Kerala School Sasthrolsavam</b> &middot; Category: <b>Systems Software</b>
+  </div>
+</div>
+
+<div class="lede">
+People with severe motor disabilities type using <strong>one button</strong>. A highlight scans through the letters; they press when it reaches the one they want. For English this has been optimised for decades. For Malayalam, nobody has done it &mdash; so a Malayalam speaker presses far more times to say the same thing. <strong>You are going to fix that, measure exactly how much you saved, and put it on a table where a judge can feel the difference with their own thumb.</strong>
+</div>
+
+<h2><span class="n">1</span>The problem, in thirty seconds</h2>
+
+<p>Imagine someone with cerebral palsy, ALS or a spinal injury. They cannot use a keyboard. They have <em>one</em> reliable movement &mdash; a tap on a large button, a blink, a twitch of one cheek muscle. That is their entire input to a computer.</p>
+
+<p>So the computer does the work instead. It shows the alphabet and moves a highlight through it &mdash; one symbol at a time, or one row at a time. When the highlight reaches what they want, they press. This is called <strong>scanning</strong>, and it is how tens of thousands of people write every day.</p>
+
+<p>It is slow. Every wasted step in the scan is a second of someone's life spent waiting to say a word.</p>
+
+<div class="box accent">
+  <span class="tag">The person you have already heard of</span>
+  <p><strong>Stephen Hawking typed exactly like this.</strong> After losing his voice in 1985 he used a program called Equalizer: a cursor scanned rows and letters, and he squeezed a hand clicker to select. At his best, <strong>about 15 words per minute.</strong></p>
+  <p>Then ALS took his hands. The clicker was replaced by an infrared sensor on his glasses watching a twitch in his cheek. Same brain, same software, <em>worse switch</em> &mdash; and his speed collapsed to <strong>one or two words per minute.</strong> In 2014 Intel rebuilt his system with word prediction trained on his own books and roughly doubled it again.</p>
+  <p>That collapse is this entire project in one biography. When each selection is slow and might misfire, <strong>the number of scan steps per word is everything.</strong></p>
+</div>
+
+<h2><span class="n">2</span>Why Malayalam is worse than English &mdash; and why that is a research question</h2>
+
+<p>English scanning is a solved optimisation problem. You arrange 26 letters so common ones need fewer steps; it is the same mathematics as file compression. Done, decades ago.</p>
+
+<p>Malayalam is not a flat row of letters. It is an <strong>akshara</strong> script, and it has structure that English does not:</p>
+
+<ul>
+  <li>After a consonant like <span class="mal">ക</span>, the only things that can <em>legally</em> come next are a vowel sign (<span class="mal">ാ&nbsp;ി&nbsp;ു</span>&hellip;), a virama <span class="mal">്</span>, an anusvara <span class="mal">ം</span>, or a small set of others. <strong>Most of the alphabet cannot follow it at all.</strong></li>
+  <li>Two vowel signs never follow each other.</li>
+  <li>Conjuncts (<em>koottaksharam</em>) create hundreds of combined forms with no English equivalent.</li>
+  <li>Malayalam is agglutinative &mdash; endings pile onto words, so whole-word prediction works far worse than it does in English.</li>
+</ul>
+
+<p><strong>Every scanning system that ships today ignores all of this.</strong> Android Switch Access and iOS Switch Control simply scan whatever grid the keyboard happens to draw, in layout order, offering symbols that <em>cannot possibly be typed next</em>. No per-language optimisation exists for any Indian script.</p>
+
+<div class="pitch">
+  <span class="tag">The idea</span>
+  Build a scan tree that knows the rules of the script. After each symbol it offers <strong>only what can legally come next</strong>, ordered so the likely ones arrive first. Measure how many button presses that saves, across five Indian scripts, with English as a control.
+</div>
+
+<h2><span class="n">3</span>What the numbers look like</h2>
+
+<p>Take the sentence <span class="mal">നീ സുഖം ആണോ</span> &mdash; eleven selections including the two spaces. Here is a first-pass model of each method. (These are estimated frequencies, not corpus-measured; producing the real numbers is week one of the project.)</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:47%">Method</th>
+      <th class="num">Presses</th>
+      <th class="num">Scan&nbsp;steps</th>
+      <th class="num">Time&nbsp;@&nbsp;1s</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>A</strong> &mdash; What ships today (row&ndash;column over a Malayalam grid)</td><td class="num">22</td><td class="num">115</td><td class="num">1 min 55 s</td></tr>
+    <tr class="dim"><td><strong>B</strong> &mdash; Same grid, sorted by letter frequency</td><td class="num">22</td><td class="num">89</td><td class="num">89 s</td></tr>
+    <tr class="dim"><td><strong>C</strong> &mdash; Entropy tree, ignores context</td><td class="num">36</td><td class="num">63</td><td class="num">63 s</td></tr>
+    <tr class="hero"><td><strong>D</strong> &mdash; AksharaScan (context + legality constraint)</td><td class="num">20</td><td class="num">49</td><td class="num">49 s</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Two minutes today. Under a minute with your tree.</strong> The word <span class="mal">സുഖം</span> alone drops from roughly 45 seconds to 18.</p>
+
+<p>Look at row <strong>C</strong> though &mdash; it is where the interesting engineering hides. A plain entropy tree is faster in <em>steps</em> but needs <strong>36 presses</strong> instead of 22, which is worse for someone whose every press costs effort. AksharaScan gets <em>both</em> numbers down, because once the illegal options are removed the correct symbol is usually sitting in the very first group offered.</p>
+
+<p>Add word prediction on top and that sentence should land near <strong>30&ndash;35 seconds</strong>.</p>
+
+<h2><span class="n">4</span>What is genuinely new (the question a judge will ask first)</h2>
+
+<p>A good judge will immediately ask <em>&ldquo;hasn't someone done this?&rdquo;</em> Here is the honest answer, and knowing it cold is worth more than any extra feature.</p>
+
+<table>
+  <thead><tr><th style="width:31%">Closest existing work</th><th style="width:34%">What it did</th><th>What it did not do</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Higger et al., 2016</strong><br>Optimal scan trees</td><td>Solved the optimal scanning tree mathematically for a flat alphabet.</td><td>Assumes every symbol is legal at every step. Cannot express a legal set that <em>changes</em> as you go. <strong>This is your baseline, not your contribution.</strong></td></tr>
+    <tr><td><strong>Roark et al., 2013</strong><br>Huffman scanning</td><td>Rebuilds the tree after every character using a language model &mdash; a <em>soft</em> version of context.</td><td>No hard legality rule; never tested on a non-alphabetic script. <strong>This is the baseline you must beat.</strong></td></tr>
+    <tr><td><strong>Android Switch Access / iOS Switch Control</strong></td><td>Ship worldwide, free, on every phone.</td><td>Scan whatever grid is drawn, in layout order. No per-language optimisation, no akshara awareness, no language model.</td></tr>
+    <tr><td><strong>Avaz, Jellow</strong> (Indian AAC apps)</td><td>Ship Malayalam; Jellow supports external switches.</td><td>Neither publishes an optimised per-language scan tree. <strong>Good news &mdash; there is a real ecosystem that could adopt yours.</strong></td></tr>
+  </tbody>
+</table>
+
+<div class="box warm">
+  <span class="tag">Say this, not something stronger</span>
+  <p>&ldquo;Context-conditional scan trees already exist. What has never been done is treating <strong>akshara legality as a hard constraint</strong>, and nobody has measured whether that hard constraint buys anything over a soft language model &mdash; or whether the benefit grows as the script gets more complex. I built it, I built the control that isolates it, and I measured it on five Brahmic scripts with English as a negative control.&rdquo;</p>
+  <p style="margin-top:7px">Overclaiming is how projects die in the first thirty seconds. This sentence is defensible and still exciting.</p>
+</div>
+
+<h2><span class="n">5</span>What you actually build</h2>
+
+<div class="grid2">
+  <div class="card"><h4>1. The simulator (the science)</h4><p>Python on your own laptop. Types thousands of real sentences through every method and counts presses. Free public corpora. <strong>No hardware. This is the main result.</strong></p></div>
+  <div class="card"><h4>2. The constraint engine (the idea)</h4><p>Learns which units can legally follow which, from text. Feeds the tree builder so only legal options are ever offered.</p></div>
+  <div class="card"><h4>3. Two one-button boxes (the demo)</h4><p>Box A scans the old way. Box B runs AksharaScan. One big button each, a large press counter on top.</p></div>
+  <div class="card"><h4>4. The evidence video</h4><p>Screen recording of real Android Switch Access struggling with a <em>koottaksharam</em>. Proof your baseline is real, not invented.</p></div>
+</div>
+
+<h3>Bill of materials &mdash; roughly &#8377;4,500 to &#8377;9,000</h3>
+
+<table>
+  <thead><tr><th style="width:60%">Item</th><th class="num">Qty</th><th class="num">&#8377;</th></tr></thead>
+  <tbody>
+    <tr><td>100&nbsp;mm arcade / accessibility switch</td><td class="num">2</td><td class="num">840</td></tr>
+    <tr><td>Raspberry Pi Pico H <em>(pre-soldered headers &mdash; check this)</em></td><td class="num">2</td><td class="num">900</td></tr>
+    <tr><td>Large 4-digit press-counter display (1.2&Prime; or bigger)</td><td class="num">2</td><td class="num">700</td></tr>
+    <tr><td>3.5&nbsp;mm switch jacks (so a real AAC user's own switch plugs in)</td><td class="num">2</td><td class="num">180</td></tr>
+    <tr><td>Cables, jumpers, terminals, speaker, enclosures, panel labels</td><td class="num">&mdash;</td><td class="num">2,900</td></tr>
+    <tr><td>Poster, record book, contingency</td><td class="num">&mdash;</td><td class="num">920</td></tr>
+    <tr class="hero"><td><strong>Total (full build)</strong></td><td class="num"></td><td class="num">9,080</td></tr>
+  </tbody>
+</table>
+
+<p>A lean version at <strong>&#8377;4,480</strong> drops the speaker, hub and spare Pico. Suppliers: Robu.in, Robocraze, ElectronicsComp. All software is free &mdash; Python, <code>indic-nlp-library</code>, <code>mlmorph</code>. <strong>No GPU, no internet, no cloud.</strong></p>
+
+<div class="box">
+  <span class="tag">Decide this before ordering anything</span>
+  <p>IRIS charges <strong>&#8377;5,000 + tax</strong> per project, with a waiver available on EWS documentation. Whether you get that waiver decides which build you can afford, so find out first and order second.</p>
+</div>
+
+<h2><span class="n">6</span>The experiments</h2>
+
+<p>You compare eight scanning methods, on six languages, over real text. The comparison itself is the science; the boxes are how you show it.</p>
+
+<table>
+  <thead><tr><th style="width:13%">Method</th><th>What it is</th></tr></thead>
+  <tbody>
+    <tr class="dim"><td><strong>C0&ndash;C2</strong></td><td>Linear scan, the real shipped grid, and a frequency-sorted grid. <em>The baselines.</em></td></tr>
+    <tr class="dim"><td><strong>C3</strong></td><td>Static entropy-optimised tree, no context (Higger-style).</td></tr>
+    <tr><td><strong>C3b</strong></td><td>Context-conditional tree, <em>no legality rule</em> (Roark re-implemented). <strong>The baseline you must beat.</strong></td></tr>
+    <tr class="hero"><td><strong>C4</strong></td><td><strong>AksharaScan &mdash; context + hard legality constraint. Your contribution.</strong></td></tr>
+    <tr class="dim"><td><strong>C5 / C6</strong></td><td>C4 plus word prediction, versus C4 plus <em>morpheme</em> prediction. Tests whether Malayalam's agglutination breaks whole-word prediction.</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Languages:</strong> Malayalam, Kannada, Tamil, Hindi, Bengali &mdash; plus <strong>English as a negative control</strong>. English has almost no legality structure, so if your method helps English as much as it helps Malayalam, the constraint is not doing what you claim. That control is what makes the result believable.</p>
+
+<h3>The four claims</h3>
+<ol>
+  <li><strong>C4 beats C3b</strong> on all five Brahmic scripts, by more than 3%. <em>The headline.</em></li>
+  <li><strong>The &ldquo;akshara tax&rdquo;:</strong> naive Malayalam versus naive English on identical sentences &mdash; predicted 1.3&ndash;1.8&times;. <em>A defensible 1.5&times; beats an indefensible 3&times;.</em></li>
+  <li><strong>A scaling law:</strong> does the benefit grow with script complexity across six languages?</li>
+  <li><strong>Morphemes beat words</strong> for Malayalam prediction, by 5% or more.</li>
+</ol>
+
+<div class="box accent">
+  <span class="tag">The part that makes this safe to attempt</span>
+  <p>The project has <strong>four independent layers, and each one is a complete result on its own.</strong> Even if the main claim underperforms, you still have: the measured akshara tax, the audit of what Android actually does with Malayalam, and the morphology result. <strong>And a negative result is still a real finding</strong> &mdash; &ldquo;hard constraints add little over a soft model in Brahmic scripts&rdquo; is publishable, and you would rather be the person who reported it.</p>
+  <p style="margin-top:7px">Nothing on the critical path needs a delivery, a partner, a lab, a permission or good weather. It is your laptop and free text.</p>
+</div>
+
+<h2><span class="n">7</span>Timeline</h2>
+
+<table>
+  <thead><tr><th style="width:20%">Date</th><th>What must exist</th></tr></thead>
+  <tbody>
+    <tr><td><strong>31 Aug &ndash; 6 Sep</strong></td><td>Verify rules and money. Unicode normaliser written and tested. Screen-record Android Switch Access on a real Malayalam keyboard. Order parts.</td></tr>
+    <tr class="hero"><td><strong>7 Sep &mdash; GATE 1</strong></td><td><strong>First real numbers exist.</strong> Presses-per-sentence for Malayalam and English. Needs no clever algorithm &mdash; only correct code. If this fails, you switch projects that evening.</td></tr>
+    <tr><td><strong>11 Sep &mdash; GATE 2</strong></td><td>C3 and C3b built. Reproduce a published English benchmark with your own code &mdash; a strong credibility slide.</td></tr>
+    <tr class="hero"><td><strong>14 Sep</strong></td><td><strong>The number the project rests on:</strong> C4 versus C3b on Malayalam.</td></tr>
+    <tr><td><strong>15&ndash;27 Sep</strong></td><td>Four more scripts plus the English control. Boxes finished. Error-robustness and morphology experiments. Figures final. Abstract locked 26 Sep.</td></tr>
+    <tr class="hero"><td><strong>30 Sep</strong></td><td><strong>Submit to IRIS &mdash; three days early.</strong> Never submit on deadline day; portals fail.</td></tr>
+    <tr><td><strong>Oct &ndash; Nov</strong></td><td>Sasthrolsavam district and state. IRIS review and national fair. Publish the code and scan trees openly.</td></tr>
+    <tr><td><strong>Feb &ndash; Mar 2027</strong></td><td><strong>Board exams. Protected. Nothing scheduled.</strong></td></tr>
+  </tbody>
+</table>
+
+<p>Weeks one and two are deliberately laptop-only, so that exams, late parcels or a partner going quiet cannot destroy them.</p>
+
+<h2><span class="n">8</span>Where this goes</h2>
+
+<p><strong>IRIS National Fair</strong> is India's only route to Regeneron ISEF, and Class 12 is your <strong>last eligible year</strong>. It has a Systems Software category, which is exactly where an algorithm with a measured claim belongs. Winners represent India at ISEF in Los Angeles in May 2027.</p>
+
+<p><strong>Sasthrolsavam</strong> gets the same work as a Working Model: two boxes, one button each, the judge types the same sentence twice and watches the counters diverge. Cheap, socially relevant, visibly working &mdash; the three things those judges actually reward.</p>
+
+<p><strong>And independently of any fair:</strong> put the code and the scan trees on Zenodo with a DOI, then open an issue on Jellow's tracker offering them. A real Malayalam AAC app exists that could adopt this. That is the outcome most likely to make the work genuinely known &mdash; and it does not depend on winning anything.</p>
+
+<div class="pitch">
+  <span class="tag">Your thirty-second pitch at the table</span>
+  Stephen Hawking typed at one word a minute using the best English system ever built. A Malayalam speaker in the same chair gets a stock scanner that walks through every symbol on the keyboard &mdash; including the ones that cannot legally come next. I built one that knows the difference. <strong>Here is how many presses it gives back.</strong>
+</div>
+
+<h2><span class="n">9</span>Do these today</h2>
+
+<div class="chk">
+  <div class="chk-h">Before anything is built or bought</div>
+  <ol>
+    <li><strong>Find out about the IRIS fee waiver</strong> &mdash; which document, which office, how long. This decides your budget, so no part gets ordered until it is answered.</li>
+    <li><strong>Open an IRIS account and walk the form to the last screen without paying.</strong> Screenshot every required field, upload and signature. One hour turns every assumption about the rules into fact.</li>
+    <li><strong>Get this year's Sasthrolsavam manual</strong> from your school's science club convenor or SITC. Read the definition of &ldquo;Working Model&rdquo; word for word. Ask whether school-level entry is still open &mdash; sub-district is in September.</li>
+    <li><strong>Confirm your first-terminal exam dates.</strong> The plan cannot be scheduled without them.</li>
+    <li><strong>Email four people</strong>: Swathanthra Malayalam Computing (the <code>mlmorph</code> maintainers), the SMC mailing list, your own Malayalam teacher, and a special educator at a Kozhikode special school. You need someone to sign off that your akshara breakdown is correct. Volunteers reply slowly &mdash; send today, not next week.</li>
+  </ol>
+</div>
+
+<div class="chk">
+  <div class="chk-h">Tomorrow &mdash; the ninety-minute test that decides everything</div>
+  <ol>
+    <li><strong>Build a Huffman tree in Python using <code>heapq</code>, and check it by hand against a six-symbol example.</strong> This is the one genuinely non-trivial piece of code in the project. If you can do it, the plan runs exactly as written. If you cannot yet, the constraint layer simplifies to a lookup table, you state that honestly in the paper, and the project still works. <strong>Knowing this on 1 September costs nothing. Discovering it on 11 September costs the project.</strong></li>
+  </ol>
+</div>
+
+<h2><span class="n">10</span>Honest risks</h2>
+
+<table>
+  <thead><tr><th style="width:37%">Risk</th><th>What you do about it</th></tr></thead>
+  <tbody>
+    <tr><td><strong>The constraint barely beats the soft model</strong></td><td>Pre-register it as a reportable negative result. Three other layers survive; the demo is unaffected.</td></tr>
+    <tr><td><strong>Unicode handling goes wrong silently</strong></td><td>The most dangerous failure here &mdash; it corrupts every number with no error message. Two full days budgeted, one normaliser for all scripts, round-trip tests, and the failure rate reported as a result.</td></tr>
+    <tr><td><strong>You cannot verify legality rules for Tamil or Bengali</strong></td><td>Do not hand-write rules for scripts you cannot read. Learn them from text by one procedure for all six languages. Malayalam alone is hand-checked and expert-validated, and the paper says so plainly.</td></tr>
+    <tr><td><strong>Exams eat September</strong></td><td>Weeks one and two are laptop work in 45-minute blocks. The headline number exists by 7 September.</td></tr>
+    <tr><td><strong>A judge who knows this literature</strong></td><td>Put Higger, Roark, Android Switch Access, Avaz and Jellow <em>on your own poster</em>. C3b exists precisely so the hardest question already has an answer.</td></tr>
+  </tbody>
+</table>
+
+<div class="box warm">
+  <span class="tag">One rule that is not negotiable</span>
+  <p><strong>This project has zero human participants, by design.</strong> No survey, no volunteer typing trial, no visits to a special school to collect data. The moment you record anyone else's press count or reaction &mdash; especially a disabled person or a minor &mdash; it becomes human-subjects research needing written approval <em>before</em> collection, which is never granted retroactively. It would surface in November and disqualify everything.</p>
+  <p style="margin-top:7px">You may absolutely <em>talk</em> to a special educator and thank them in the acknowledgements. You may let anyone try the boxes at the fair. You simply never write down what they did.</p>
+</div>
+
+<footer>
+  <strong>AksharaScan</strong> &mdash; proposal for IRIS National Fair 2026&ndash;27 and Kerala School Sasthrolsavam.
+  Selected from 16 candidate projects across 8 approaches; 11 were eliminated by prior-art and feasibility review, and three independent judging passes ranked this first.
+  Full technical specification &mdash; experiments, controls, statistics, safety rules and day-by-day plan &mdash; in <code>BUILD.md</code>.
+</footer>
+
+</body>
+</html>

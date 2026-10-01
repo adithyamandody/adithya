@@ -1,0 +1,42 @@
+competition,file,data_rows
+Regeneron ISEF,winners/regeneron-isef.csv,24
+IRIS National Fair,winners/iris-national-fair.csv,6
+International Olympiad in AI (IOAI),winners/international-olympiad-in-ai-ioai.csv,8
+INAIO (Indian National AI Olympiad),winners/inaio-indian-national-ai-olympiad.csv,5
+International Olympiad in Informatics (IOI),winners/international-olympiad-in-informatics-ioi.csv,14
+Indian Computing Olympiad (ZCO / ZIO / INOI),winners/indian-computing-olympiad-zco-zio-inoi.csv,5
+USACO,winners/usaco.csv,5
+Bebras International Challenge,winners/bebras-international-challenge.csv,5
+Apple Swift Student Challenge,winners/apple-swift-student-challenge.csv,6
+Coolest Projects,winners/coolest-projects.csv,5
+Breakthrough Junior Challenge,winners/breakthrough-junior-challenge.csv,6
+Microsoft Imagine Cup Junior,winners/microsoft-imagine-cup-junior.csv,5
+International Computer Science Competition (ICSC),winners/international-computer-science-competition-icsc.csv,5
+Genius Olympiad,winners/genius-olympiad.csv,5
+Conrad Challenge,winners/conrad-challenge.csv,5
+NASA Space Apps Challenge,winners/nasa-space-apps-challenge.csv,32
+Hack Club Stardance Challenge,winners/hack-club-stardance-challenge.csv,5
+Hack Club high school hackathons,winners/hack-club-high-school-hackathons.csv,5
+MLH hackathons,winners/mlh-hackathons.csv,5
+World Robot Olympiad (WRO),winners/world-robot-olympiad-wro.csv,5
+FIRST Tech Challenge / FIRST Global,winners/first-tech-challenge-first-global.csv,5
+RoboCupJunior,winners/robocupjunior.csv,5
+iGEM (High School track),winners/igem-high-school-track.csv,5
+Stockholm Junior Water Prize,winners/stockholm-junior-water-prize.csv,5
+NYAS Junior Academy Innovation Challenges,winners/nyas-junior-academy-innovation-challenges.csv,5
+Diamond Challenge,winners/diamond-challenge.csv,5
+Technovation Girls,winners/technovation-girls.csv,5
+picoCTF,winners/picoctf.csv,5
+Regeneron Science Talent Search,winners/regeneron-science-talent-search.csv,5
+Davidson Fellows,winners/davidson-fellows.csv,5
+Congressional App Challenge,winners/congressional-app-challenge.csv,5
+ATL Marathon / School Innovation Marathon,winners/atl-marathon-school-innovation-marathon.csv,5
+National Childrens Science Congress (NCSC),winners/national-childrens-science-congress-ncsc.csv,5
+vivo Ignite,winners/vivo-ignite.csv,5
+Youth Ideathon,winners/youth-ideathon.csv,5
+Jawaharlal Nehru National Science Exhibition (JNNSEC / RBVP),winners/jawaharlal-nehru-national-science-exhibition-jnnsec-rbvp.csv,5
+CBSE Science Exhibition,winners/cbse-science-exhibition.csv,5
+IGNITE Awards,winners/ignite-awards.csv,5
+Smart India Hackathon,winners/smart-india-hackathon.csv,5
+Kerala School Sasthrolsavam,winners/kerala-school-sasthrolsavam.csv,5
+Young Innovators Programme (YIP),winners/young-innovators-programme-yip.csv,5
