@@ -166,3 +166,64 @@ the alternative: whole **akshara clusters**, where the inventory runs to
 thousands and the legality structure is far sharper. The constraint may bite
 much harder there. **Testing IV4 is the highest-value next experiment**, and it
 should happen before the claim is rewritten.
+
+---
+
+# Finding 004 — clusters close the last route (IV4)
+
+**Date:** 1 October 2026 · `app/test/cluster_units.mjs`
+
+Finding 003 ended with a caveat: all three results used **decomposed** units, and
+whole **akshara clusters** might make legality bite harder. BUILD.md lists this as
+IV4. It does the opposite.
+
+| scheme | inventory | selections | steps | presses |
+|---|---|---|---|---|
+| decomposed, row–column (ships today) | 75 | 11 | **115** | 22 |
+| decomposed, bigram tree | 75 | 11 | **50** | 25 |
+| decomposed, bigram + legality (the proposal) | 75 | 11 | **50** | 25 |
+| cluster, frequency tree | 528 | 7 | 62 | 27 |
+| cluster, frequency tree + legality | 528 | 7 | 59 | 29 |
+
+**Mean legal set under clusters: 525 of 528 — 99.3%.** Against 64% for decomposed
+units.
+
+## Why the caveat was wrong
+
+A cluster is a **complete syllable**, so nearly every cluster may legally follow
+nearly every other. The legality constraint lived in the *internal structure of the
+akshara* — after a virama only a consonant may follow, a vowel sign cannot follow a
+vowel sign — and clusters put that structure **inside the unit**, where a scanner
+never sees it.
+
+Moving to clusters does not strengthen the constraint. It dissolves it.
+
+## A second result, unlooked for and more useful
+
+**Decomposed beats clusters: 50 steps against 62, a 19% difference.** Fewer
+selections (7 vs 11) do not pay for a sevenfold larger inventory and the deeper
+tree it forces.
+
+That is a concrete, publishable design recommendation for anyone building Malayalam
+AAC — *decompose the akshara, do not scan whole clusters* — and no one has published
+it either.
+
+## Status after four experiments
+
+The constraint is finished as a contribution. Every route has been tested and closed:
+clean input (001), mis-presses (002), zero-resource (003), scanning unit (004).
+
+Three things survive, and they are what the paper should be about:
+
+1. **The akshara tax: 115 → 50 steps, 2.3×.** Real, and unmeasured in the literature.
+2. **Decompose, don't cluster: 19%.** A design recommendation with a number on it.
+3. **Legality is a free substitute for a corpus you do not have** — 65 steps against
+   66 for a unigram model, with no text at all. A low-resource deployment claim.
+
+Plus the negative result itself, with its mechanism: *a Huffman code already assigns
+improbable symbols long codewords, so forbidding them changes nothing.* Four
+experiments agreeing on one mechanism is a stronger paper than a 5% win would have
+been.
+
+**All four findings rest on the hand-estimated model.** Phase 3 must re-run them on
+real corpora before anything is claimed in public.
