@@ -1,0 +1,377 @@
+[
+ {
+  "id": "v_a",
+  "char": "അ",
+  "class": "V"
+ },
+ {
+  "id": "v_aa",
+  "char": "ആ",
+  "class": "V"
+ },
+ {
+  "id": "v_i",
+  "char": "ഇ",
+  "class": "V"
+ },
+ {
+  "id": "v_ii",
+  "char": "ഈ",
+  "class": "V"
+ },
+ {
+  "id": "v_u",
+  "char": "ഉ",
+  "class": "V"
+ },
+ {
+  "id": "v_uu",
+  "char": "ഊ",
+  "class": "V"
+ },
+ {
+  "id": "v_ri",
+  "char": "ഋ",
+  "class": "V"
+ },
+ {
+  "id": "v_e",
+  "char": "എ",
+  "class": "V"
+ },
+ {
+  "id": "v_ee",
+  "char": "ഏ",
+  "class": "V"
+ },
+ {
+  "id": "v_ai",
+  "char": "ഐ",
+  "class": "V"
+ },
+ {
+  "id": "v_o",
+  "char": "ഒ",
+  "class": "V"
+ },
+ {
+  "id": "v_oo",
+  "char": "ഓ",
+  "class": "V"
+ },
+ {
+  "id": "v_au",
+  "char": "ഔ",
+  "class": "V"
+ },
+ {
+  "id": "ka",
+  "char": "ക",
+  "class": "C"
+ },
+ {
+  "id": "kha",
+  "char": "ഖ",
+  "class": "C"
+ },
+ {
+  "id": "ga",
+  "char": "ഗ",
+  "class": "C"
+ },
+ {
+  "id": "gha",
+  "char": "ഘ",
+  "class": "C"
+ },
+ {
+  "id": "nga",
+  "char": "ങ",
+  "class": "C"
+ },
+ {
+  "id": "cha",
+  "char": "ച",
+  "class": "C"
+ },
+ {
+  "id": "chha",
+  "char": "ഛ",
+  "class": "C"
+ },
+ {
+  "id": "ja",
+  "char": "ജ",
+  "class": "C"
+ },
+ {
+  "id": "jha",
+  "char": "ഝ",
+  "class": "C"
+ },
+ {
+  "id": "nja",
+  "char": "ഞ",
+  "class": "C"
+ },
+ {
+  "id": "tta",
+  "char": "ട",
+  "class": "C"
+ },
+ {
+  "id": "ttha",
+  "char": "ഠ",
+  "class": "C"
+ },
+ {
+  "id": "dda",
+  "char": "ഡ",
+  "class": "C"
+ },
+ {
+  "id": "ddha",
+  "char": "ഢ",
+  "class": "C"
+ },
+ {
+  "id": "nna",
+  "char": "ണ",
+  "class": "C"
+ },
+ {
+  "id": "ta",
+  "char": "ത",
+  "class": "C"
+ },
+ {
+  "id": "tha",
+  "char": "ഥ",
+  "class": "C"
+ },
+ {
+  "id": "da",
+  "char": "ദ",
+  "class": "C"
+ },
+ {
+  "id": "dha",
+  "char": "ധ",
+  "class": "C"
+ },
+ {
+  "id": "na",
+  "char": "ന",
+  "class": "C"
+ },
+ {
+  "id": "pa",
+  "char": "പ",
+  "class": "C"
+ },
+ {
+  "id": "pha",
+  "char": "ഫ",
+  "class": "C"
+ },
+ {
+  "id": "ba",
+  "char": "ബ",
+  "class": "C"
+ },
+ {
+  "id": "bha",
+  "char": "ഭ",
+  "class": "C"
+ },
+ {
+  "id": "ma",
+  "char": "മ",
+  "class": "C"
+ },
+ {
+  "id": "ya",
+  "char": "യ",
+  "class": "C"
+ },
+ {
+  "id": "ra",
+  "char": "ര",
+  "class": "C"
+ },
+ {
+  "id": "la",
+  "char": "ല",
+  "class": "C"
+ },
+ {
+  "id": "va",
+  "char": "വ",
+  "class": "C"
+ },
+ {
+  "id": "sha",
+  "char": "ശ",
+  "class": "C"
+ },
+ {
+  "id": "ssa",
+  "char": "ഷ",
+  "class": "C"
+ },
+ {
+  "id": "sa",
+  "char": "സ",
+  "class": "C"
+ },
+ {
+  "id": "ha",
+  "char": "ഹ",
+  "class": "C"
+ },
+ {
+  "id": "lla",
+  "char": "ള",
+  "class": "C"
+ },
+ {
+  "id": "zha",
+  "char": "ഴ",
+  "class": "C"
+ },
+ {
+  "id": "rra",
+  "char": "റ",
+  "class": "C"
+ },
+ {
+  "id": "s_aa",
+  "char": "ാ",
+  "class": "S"
+ },
+ {
+  "id": "s_i",
+  "char": "ി",
+  "class": "S"
+ },
+ {
+  "id": "s_ii",
+  "char": "ീ",
+  "class": "S"
+ },
+ {
+  "id": "s_u",
+  "char": "ു",
+  "class": "S"
+ },
+ {
+  "id": "s_uu",
+  "char": "ൂ",
+  "class": "S"
+ },
+ {
+  "id": "s_ri",
+  "char": "ൃ",
+  "class": "S"
+ },
+ {
+  "id": "s_e",
+  "char": "െ",
+  "class": "S"
+ },
+ {
+  "id": "s_ee",
+  "char": "േ",
+  "class": "S"
+ },
+ {
+  "id": "s_ai",
+  "char": "ൈ",
+  "class": "S"
+ },
+ {
+  "id": "s_o",
+  "char": "ൊ",
+  "class": "S"
+ },
+ {
+  "id": "s_oo",
+  "char": "ോ",
+  "class": "S"
+ },
+ {
+  "id": "s_au",
+  "char": "ൗ",
+  "class": "S"
+ },
+ {
+  "id": "c_nn",
+  "char": "ൺ",
+  "class": "CH"
+ },
+ {
+  "id": "c_n",
+  "char": "ൻ",
+  "class": "CH"
+ },
+ {
+  "id": "c_r",
+  "char": "ർ",
+  "class": "CH"
+ },
+ {
+  "id": "c_l",
+  "char": "ൽ",
+  "class": "CH"
+ },
+ {
+  "id": "c_ll",
+  "char": "ൾ",
+  "class": "CH"
+ },
+ {
+  "id": "p_sp",
+  "char": " ",
+  "class": "SP"
+ },
+ {
+  "id": "p_dot",
+  "char": ".",
+  "class": "SP"
+ },
+ {
+  "id": "p_com",
+  "char": ",",
+  "class": "SP"
+ },
+ {
+  "id": "p_q",
+  "char": "?",
+  "class": "SP"
+ },
+ {
+  "id": "ctl_undo",
+  "char": "⌫",
+  "class": "CTL"
+ },
+ {
+  "id": "ctl_clear",
+  "char": "✕",
+  "class": "CTL"
+ },
+ {
+  "id": "x_vir",
+  "char": "്",
+  "class": "VIR"
+ },
+ {
+  "id": "x_anu",
+  "char": "ം",
+  "class": "ANU"
+ },
+ {
+  "id": "x_vis",
+  "char": "ഃ",
+  "class": "ANU"
+ }
+]

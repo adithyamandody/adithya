@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0d1117">
+<title>AksharaScan</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header id="bar">
+  <span class="brand">Akshara<b>Scan</b></span>
+  <nav>
+    <button data-view="compose" class="on">Compose</button>
+    <button data-view="output">Output</button>
+    <button data-view="compare">Compare</button>
+    <button data-view="settings">Settings</button>
+  </nav>
+  <span id="link" class="pill off">switch: waiting</span>
+</header>
+
+<!-- ───────────────────────── compose ───────────────────────── -->
+<section id="compose" class="view on">
+  <div id="text" class="ml" aria-live="polite"><span class="hint">Press the switch to begin</span></div>
+
+  <div id="scan"></div>
+
+  <div id="stats">
+    <div><b id="s-press">0</b><span>presses</span></div>
+    <div><b id="s-step">0</b><span>scan steps</span></div>
+    <div><b id="s-time">0.0s</b><span>elapsed</span></div>
+    <div><b id="s-mode">B</b><span>mode</span></div>
+  </div>
+</section>
+
+<!-- ───────────────────────── output ───────────────────────── -->
+<section id="output" class="view">
+  <div id="out-text" class="ml big"></div>
+  <p class="muted">Approve first. Only then write — a sheet of paper and ninety seconds
+     of plotting is an expensive mistake.</p>
+  <div id="out-actions">
+    <button data-act="speak">🔊 Speak</button>
+    <button data-act="write">✍️ Write</button>
+    <button data-act="edit">← Edit</button>
+    <button data-act="clear">✕ Clear</button>
+  </div>
+  <div id="out-status" class="muted"></div>
+</section>
+
+<!-- ───────────────────────── compare ───────────────────────── -->
+<section id="compare" class="view">
+  <p class="muted">Same sentence, both methods. <b>A</b> is what ships on Android today;
+     <b>B</b> is AksharaScan.</p>
+  <div id="cmp-target" class="ml"></div>
+  <div id="cmp-grid">
+    <div class="cmp" id="cmp-a">
+      <h3>A · row–column<small>what ships today</small></h3>
+      <div class="n" id="a-press">0</div><div class="lbl">presses</div>
+      <div class="n sub" id="a-step">0</div><div class="lbl">scan steps</div>
+      <div class="n sub" id="a-time">0.0s</div><div class="lbl">at current speed</div>
+    </div>
+    <div class="cmp win" id="cmp-b">
+      <h3>B · AksharaScan<small>context + legality</small></h3>
+      <div class="n" id="b-press">0</div><div class="lbl">presses</div>
+      <div class="n sub" id="b-step">0</div><div class="lbl">scan steps</div>
+      <div class="n sub" id="b-time">0.0s</div><div class="lbl">at current speed</div>
+    </div>
+  </div>
+  <div id="cmp-verdict"></div>
+  <div class="row">
+    <button id="cmp-run">Run on a sample sentence</button>
+    <button id="cmp-typed">Use what I just typed</button>
+  </div>
+  <p class="muted tiny">Simulated over the same unit sequence with the same clock —
+     identical code path, so the only difference is the scanning method.</p>
+</section>
+
+<!-- ───────────────────────── settings ───────────────────────── -->
+<section id="settings" class="view">
+  <label>Scan period
+    <select id="set-period">
+      <option value="400">400 ms — fast</option>
+      <option value="600">600 ms</option>
+      <option value="800" selected>800 ms — typical</option>
+      <option value="1200">1200 ms</option>
+      <option value="2000">2000 ms — slow</option>
+    </select>
+  </label>
+
+  <label>Mode
+    <select id="set-mode">
+      <option value="B" selected>B — AksharaScan (context + legality)</option>
+      <option value="A">A — row–column baseline</option>
+    </select>
+  </label>
+
+  <label class="check"><input type="checkbox" id="set-audio" checked> Audible tick each scan step</label>
+  <label class="check"><input type="checkbox" id="set-tap" checked> Screen tap also acts as the switch</label>
+
+  <label>Plotter server
+    <input id="set-server" type="text" placeholder="http://192.168.1.5:5000" inputmode="url">
+  </label>
+
+  <h3>Switch test</h3>
+  <p class="muted">Press the switch. Every press should light exactly one box.
+     Two boxes from one press means the button is bouncing — fix the firmware debounce
+     before trusting any count.</p>
+  <div id="test-lamp"></div>
+  <div id="test-out" class="muted">no presses yet</div>
+  <button id="test-reset">Reset</button>
+</section>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
