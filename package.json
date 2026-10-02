@@ -8,7 +8,7 @@
     "test": "node app/test/scan.test.mjs && node app/test/session.test.mjs",
     "sync": "npm run build && npx cap sync android",
     "apk": "npm run sync && cd android && ./gradlew assembleDebug",
-    "install": "adb install -r android/app/build/outputs/apk/debug/app-debug.apk"
+    "install-apk": "adb install -r android/app/build/outputs/apk/debug/app-debug.apk"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
