@@ -19,12 +19,13 @@ const D = { units: [], byId: {}, bigrams: {}, legal: {}, grid: null };
 const S = {
   buf: [],            // array of unit objects
   mode: 'B',
-  period: 800,
+  period: 1500,   // first-run friendly; Settings goes down to 400
   audio: true,
   tap: true,
   server: '',
   session: null,
   lastPressAt: 0,
+  practice: null,   // {id, char} the unit the guide is asking for
 };
 
 /* ══════════════════════════ data ══════════════════════════ */
@@ -77,6 +78,10 @@ function commit(unitId) {
   if (u.id === 'ctl_undo') S.buf.pop();
   else if (u.id === 'ctl_clear') S.buf = [];
   else S.buf.push(u);
+  if (S.practice && u.id === S.practice.id) {
+    S.practice = null;
+    $('#practice').innerHTML = '<span>✓ That is it — you typed it with one button.</span>';
+  }
   tick();
   paintText();
   paintStats();
@@ -89,10 +94,51 @@ function paintText() {
   const el = $('#text');
   el.innerHTML = S.buf.length
     ? `${escapeHtml(text())}<span class="cursor"></span>`
-    : '<span class="hint">Press the switch to begin</span>';
+    : '<span class="hint">Press <kbd>space</kbd>, tap, or use the switch</span>';
+}
+
+/* The step clock, drawn. Without this the scan feels arbitrary: you cannot see
+   that not-pressing is an answer on a deadline. */
+function paintTimer() {
+  const bar = $('#timer i');
+  const s = S.session;
+  if (!bar) return;
+  if (!s || !s.running || s.tStep == null) { bar.style.transform = 'scaleX(1)'; }
+  else {
+    const left = 1 - Math.min(1, (performance.now() - s.tStep) / s.period);
+    bar.style.transform = `scaleX(${left.toFixed(3)})`;
+  }
+  requestAnimationFrame(paintTimer);
+}
+requestAnimationFrame(paintTimer);
+
+/* ── guided practice ─────────────────────────────────────────────────────
+   "I don't know how to work this" is answered best by being told, each step,
+   what the right move is — with a target you can actually aim at. */
+function startPractice() {
+  const pick = ['ka', 'na', 'ma', 'ta', 'v_a', 'pa', 'ya', 'ra'];
+  const id = pick[Math.floor(Math.random() * pick.length)];
+  S.practice = D.byId[id];
+  S.buf = [];
+  paintText();
+  show('compose');
+  startScan();
+}
+
+function paintPractice(f) {
+  const el = $('#practice');
+  if (!S.practice) { el.hidden = true; return; }
+  el.hidden = false;
+  const inGroup = f && f.mode === 'B' && f.hot.includes(S.practice.id);
+  el.innerHTML =
+    `<span>Type this:</span><span class="t">${escapeHtml(S.practice.char)}</span>`
+    + `<span class="verdict">${inGroup
+        ? '<span class="yes">It is in the teal group → PRESS</span>'
+        : '<span class="no">Not in the teal group → wait, do nothing</span>'}</span>`;
 }
 
 function paintScan(f) {
+  paintPractice(f);
   const el = $('#scan');
   if (f.mode === 'B') {
     el.className = '';
@@ -275,6 +321,9 @@ function wire() {
   $('[data-act=clear]').onclick = () => { S.buf = []; paintText(); show('compose'); startScan(); };
   $('#cmp-run').onclick = () => runCompare(SAMPLE);
   $('#cmp-typed').onclick = () => runCompare(S.buf.map(u => u.id));
+  $('#help-open').onclick = () => $('#help').classList.add('on');
+  $('#help-go').onclick = () => { $('#help').classList.remove('on'); seen(); startScan(); };
+  $('#help-practice').onclick = () => { $('#help').classList.remove('on'); seen(); startPractice(); };
   $('#test-reset').onclick = () => { testN = 0; $('#test-lamp').innerHTML = ''; $('#test-out').textContent = 'no presses yet'; };
 
   $('#set-period').onchange = e => { S.period = +e.target.value; save(); startScan(); };
@@ -282,6 +331,13 @@ function wire() {
   $('#set-audio').onchange = e => { S.audio = e.target.checked; save(); };
   $('#set-tap').onchange = e => { S.tap = e.target.checked; save(); };
   $('#set-server').oninput = e => { S.server = e.target.value.trim(); save(); };
+}
+
+function seen() {
+  try { localStorage.setItem('aksharascan-seen', '1'); } catch (_) {}
+}
+function firstRun() {
+  try { return !localStorage.getItem('aksharascan-seen'); } catch (_) { return true; }
 }
 
 function save() {
@@ -315,6 +371,8 @@ function restore() {
   restore();
   wire();
   paintText();
+  if (firstRun()) $('#help').classList.add('on');
+  else $('#help').classList.remove('on');
   startScan();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => { /* offline is a bonus */ });

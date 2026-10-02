@@ -10,6 +10,23 @@
 </head>
 <body>
 
+<div id="help" class="on">
+  <div class="card">
+    <h2>It is a yes / no game</h2>
+    <p class="sub">The computer asks “is your letter in <em>this</em> group?” and halves
+       the group each time until one letter is left.</p>
+    <ol>
+      <li><b>A group lights up teal.</b> That is the question.</li>
+      <li><b>Your letter in it?</b> Press <kbd>space</kbd> or tap the screen — that means <em>yes</em>.</li>
+      <li><b>Not in it?</b> Do nothing. Waiting means <em>no</em>, and the bar running out answers for you.</li>
+    </ol>
+    <p class="warn">Doing nothing is a real answer. That is the part that feels strange —
+       half the time the right move is to sit still.</p>
+    <button id="help-go">Try it</button>
+    <button id="help-practice" class="ghost">Guide me through one letter</button>
+  </div>
+</div>
+
 <header id="bar">
   <span class="brand">Akshara<b>Scan</b></span>
   <nav>
@@ -17,13 +34,21 @@
     <button data-view="output">Output</button>
     <button data-view="compare">Compare</button>
     <button data-view="settings">Settings</button>
+    <button id="help-open" title="How do I use this?">?</button>
   </nav>
   <span id="link" class="pill off">switch: waiting</span>
 </header>
 
 <!-- ───────────────────────── compose ───────────────────────── -->
 <section id="compose" class="view on">
-  <div id="text" class="ml" aria-live="polite"><span class="hint">Press the switch to begin</span></div>
+  <div id="practice" hidden></div>
+  <div id="text" class="ml" aria-live="polite"><span class="hint">Press <kbd>space</kbd>, tap, or use the switch</span></div>
+
+  <div id="ask">
+    <span id="ask-text">Is your letter in the <b class="teal">teal</b> group?</span>
+    <span id="ask-keys"><b>press</b> = yes &nbsp;·&nbsp; <b>wait</b> = no</span>
+  </div>
+  <div id="timer"><i></i></div>
 
   <div id="scan"></div>
 
@@ -83,8 +108,9 @@
     <select id="set-period">
       <option value="400">400 ms — fast</option>
       <option value="600">600 ms</option>
-      <option value="800" selected>800 ms — typical</option>
+      <option value="800">800 ms — typical</option>
       <option value="1200">1200 ms</option>
+      <option value="1500" selected>1500 ms — learning</option>
       <option value="2000">2000 ms — slow</option>
     </select>
   </label>

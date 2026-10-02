@@ -144,3 +144,68 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--hot)}
   #stats div{min-width:calc(50% - 5px)}
   #text,#out-text{font-size:32px}
 }
+
+/* ── the question, and the clock that answers it for you ───────────────── */
+#ask{
+  display:flex;justify-content:space-between;align-items:baseline;gap:14px;
+  flex-wrap:wrap;font-size:16px;padding:0 2px;
+}
+#ask-text{font-weight:500}
+#ask-text .teal{color:var(--hot)}
+#ask-keys{font-size:13px;color:var(--dim)}
+#ask-keys b{color:var(--ink);font-weight:600}
+#timer{height:5px;border-radius:99px;background:#1c2430;overflow:hidden;margin:-8px 0 0}
+#timer i{
+  display:block;height:100%;width:100%;background:var(--hot);border-radius:99px;
+  transform-origin:left center;
+}
+
+/* ── practice banner ───────────────────────────────────────────────────── */
+#practice{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  background:var(--hot-dim);border:1px solid var(--hot);border-radius:11px;
+  padding:12px 16px;font-size:15px;
+}
+#practice .t{font-family:var(--ml);font-size:34px;line-height:1}
+#practice .verdict{margin-left:auto;font-weight:600}
+#practice .yes{color:#0b1a18;background:var(--hot);padding:3px 11px;border-radius:7px}
+#practice .no{color:var(--dim)}
+
+/* ── first-run explainer ───────────────────────────────────────────────── */
+#help{
+  position:fixed;inset:0;z-index:50;background:rgba(6,9,14,.86);
+  display:none;align-items:center;justify-content:center;padding:22px;
+}
+#help.on{display:flex}
+#help .card{
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:30px;max-width:540px;width:100%;
+}
+#help h2{font-size:25px;margin-bottom:8px;letter-spacing:-.4px}
+#help .sub{color:var(--dim);font-size:15px;margin-bottom:20px;line-height:1.5}
+#help em{color:var(--ink);font-style:normal;font-weight:500}
+#help ol{margin:0 0 18px;padding-left:22px}
+#help li{margin-bottom:11px;line-height:1.5;font-size:15px}
+#help li::marker{color:var(--hot);font-weight:700}
+#help b{font-weight:600}
+#help kbd{
+  font:13px/1 ui-monospace,Menlo,monospace;background:#2b3542;color:var(--ink);
+  border:1px solid #3c4858;border-bottom-width:2px;border-radius:5px;padding:4px 8px;
+}
+#help .warn{
+  background:#2a2317;border:1px solid #6b5a2e;color:#e8d9ae;
+  border-radius:9px;padding:12px 14px;font-size:14px;line-height:1.5;margin-bottom:20px;
+}
+#help button{margin-right:9px}
+#help button.ghost{background:none;border-color:var(--line);color:var(--dim)}
+#help-open{
+  width:30px;height:30px;padding:0;border-radius:50%;font-weight:700;
+  background:none;border:1px solid var(--line);color:var(--dim);margin-left:6px;
+}
+
+/* `hidden` loses to a display rule, so say so explicitly */
+#practice[hidden]{display:none}
+#text .hint kbd{
+  font:12px/1 ui-monospace,Menlo,monospace;background:#2b3542;color:var(--ink);
+  border:1px solid #3c4858;border-bottom-width:2px;border-radius:5px;padding:3px 7px;
+}
