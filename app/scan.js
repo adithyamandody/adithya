@@ -136,7 +136,8 @@ export class ScanSession {
     this.schedule = schedule || (typeof requestAnimationFrame !== 'undefined'
       ? requestAnimationFrame.bind(globalThis)
       : (fn => setTimeout(fn, 16)));
-    this.presses = 0;
+    this.presses = 0;        // running total, for the on-screen counter
+    this.selPresses = 0;     // presses in THIS selection only
     this.steps = 0;
     this.t0 = this.now();
     this.pressed = false;
@@ -152,9 +153,14 @@ export class ScanSession {
      of each context, over and over. (Reported from the live app: three letters
      appeared with nobody touching anything.)
 
+     Counts THIS selection, not the running total. The total carries across
+     selections for the on-screen counter, so testing it meant the guard was
+     dead from the first letter onward and only the pause graft was catching
+     idling — a silent failure that survived five deploys.
+
      Cost: the single least-likely unit in each context cannot be reached with
      zero presses. That is a far better trade than idling into gibberish. */
-  idled() { return this.presses === 0; }
+  idled() { return this.selPresses === 0; }
 
   begin() {
     this.running = true;
@@ -185,6 +191,7 @@ export class ScanSession {
     if (this.pressed) {
       this.pressed = false;
       this.presses++;
+      this.selPresses++;
       this._advance(true);
     } else if (this.now() - this.tStep >= this.period) {
       this._advance(false);

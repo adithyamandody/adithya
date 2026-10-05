@@ -94,6 +94,29 @@ t('mode A also idles instead of typing, after two full passes', () => {
   eq(r.emitted, null, 'row-column typed something unprompted');
 });
 
+/* The guard was dead from the second letter onward: app.js carries the press
+   TOTAL across sessions, and idled() tested that total, so it was never zero
+   again. Only the pause graft was catching idling. Five deploys did not notice.
+   This pins the contract: a carried-over total must not suppress idling. */
+t('idling is detected even after earlier selections', () => {
+  const s = new ScanSession({
+    mode: 'B', period: 800, data: D, context: () => 'SP',
+    now: () => 0, schedule: () => {},
+  });
+  s.presses = 17;            // as app.js does, for the on-screen counter
+  s.selPresses = 0;          // but this selection has had none
+  ok(s.idled(), 'a carried-over total suppressed the idle guard');
+  s.selPresses = 1;
+  ok(!s.idled(), 'one press in this selection still counted as idle');
+});
+
+t('selPresses counts only the current selection', () => {
+  const r = drive({ mode: 'B', wants: f => f.hot.includes('ka') });
+  eq(r.emitted, 'ka');
+  eq(r.session.selPresses, r.session.presses, 'fresh session: both agree');
+  ok(r.session.selPresses >= 1);
+});
+
 t('one press is enough to make a real selection', () => {
   const r = drive({ mode: 'B', wants: f => f.hot.includes('ka') });
   eq(r.emitted, 'ka');

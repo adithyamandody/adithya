@@ -65,20 +65,33 @@ function startScan() {
     context,
     onFrame: paintScan,
     onEmit: commit,
-    onIdle: pause,
+    onIdle: maybePause,
   });
-  sess.presses = prev ? prev.presses : 0;     // counters persist across units
+  sess.presses = prev ? prev.presses : 0;     // running total, for display
   sess.steps = prev ? prev.steps : 0;
+  sess.selPresses = 0;                        // never carried: it gates idling
   sess.t0 = prev ? prev.t0 : performance.now();
   S.session = sess;
   sess.begin();
 }
 
+const IDLE_RUNS_BEFORE_PAUSE = 2;
+
+/* Nobody pressed for a whole traversal. One is not enough to stop on — at
+   2000 ms that is about ten seconds, which is just someone thinking. Give it
+   two before pausing, then wait for a press. */
+function maybePause() {
+  S.idleRuns = (S.idleRuns || 0) + 1;
+  if (S.idleRuns < IDLE_RUNS_BEFORE_PAUSE) { startScan(); return; }
+  pause(true);
+}
+
 /* Nobody pressed: stop, do not type, and say so. */
-function pause() {
+function pause(afterIdle) {
   S.paused = true;
-  $('#ask-text').innerHTML = 'Paused — nothing was pressed.';
-  $('#ask-keys').innerHTML = '<b>press</b> to start again';
+  S.idleRuns = 0;
+  $('#ask-text').innerHTML = afterIdle ? 'Paused — no input for a while.' : 'Ready when you are.';
+  $('#ask-keys').innerHTML = '<b>press</b> to start';
   $('#scan').innerHTML = '<p class="idlemsg">Waiting for you. '
     + 'Nothing is typed while you do nothing.</p>';
 }
@@ -86,10 +99,11 @@ function pause() {
 function commit(unitId) {
   const u = D.byId[unitId];
   if (!u) return;
-  if (u.id === 'ctl_pause') { pause(); return; }
+  if (u.id === 'ctl_pause') { maybePause(); return; }
   if (u.id === 'ctl_undo') S.buf.pop();
   else if (u.id === 'ctl_clear') S.buf = [];
   else S.buf.push(u);
+  S.idleRuns = 0;
   if (S.practice && u.id === S.practice.id) {
     S.practice = null;
     $('#practice').innerHTML = '<span>✓ That is it — you typed it with one button.</span>';
