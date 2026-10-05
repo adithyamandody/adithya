@@ -26,7 +26,8 @@ const S = {
   session: null,
   paused: false,
   lastPressAt: 0,
-  practice: null,   // {id, char} the unit the guide is asking for
+  practice: null,   // {ids, i, word} the guide's target
+  predict: true,    // word prediction (BUILD.md C5)
 };
 
 /* ══════════════════════════ data ══════════════════════════ */
@@ -63,6 +64,7 @@ function startScan() {
     period: S.period,
     data: D,
     context,
+    extra: candidates(),
     onFrame: paintScan,
     onEmit: commit,
     onIdle: maybePause,
@@ -97,12 +99,28 @@ function pause(afterIdle) {
 }
 
 function commit(unitId) {
+  if (unitId.startsWith('w:')) {         // a whole-word completion
+    const word = unitId.slice(2);
+    const pre = partial();
+    for (let i = 0; i < [...pre].length; i++) S.buf.pop();   // drop the prefix
+    for (const ch of [...word]) {
+      const unit = D.units.find(x => x.char === ch);
+      if (unit) S.buf.push(unit);
+    }
+    learnWord(word);
+    S.idleRuns = 0;
+    tick(); paintText(); paintStats(); startScan();
+    return;
+  }
   const u = D.byId[unitId];
   if (!u) return;
   if (u.id === 'ctl_pause') { maybePause(); return; }
   if (u.id === 'ctl_undo') S.buf.pop();
   else if (u.id === 'ctl_clear') S.buf = [];
-  else S.buf.push(u);
+  else {
+    if (u.class === 'SP') learnWord(partial());
+    S.buf.push(u);
+  }
   S.idleRuns = 0;
   const want = practiceTarget();
   if (want && u.id === want.id) S.practice.i++;
@@ -222,6 +240,8 @@ const COMBINING = new Set(['S', 'VIR']);
 const DOTTED = '\u25CC';
 
 function chip(id, cls) {
+  if (id.startsWith('w:'))
+    return `<div class="u word ${cls}">${escapeHtml(id.slice(2))}</div>`;
   const u = D.byId[id];
   if (!u) return '';
   const ctl = u.class === 'CTL' ? ' ctl' : '';
@@ -442,6 +462,12 @@ function wire() {
   $('#set-mode').onchange = e => { S.mode = e.target.value; save(); startScan(); };
   $('#set-audio').onchange = e => { S.audio = e.target.checked; save(); };
   $('#set-tap').onchange = e => { S.tap = e.target.checked; save(); };
+  $('#set-predict').onchange = e => { S.predict = e.target.checked; save(); startScan(); };
+  $('#forget').onclick = () => {
+    try { localStorage.removeItem('aksharascan-words'); } catch (_) {}
+    $('#forget').textContent = 'Forgotten';
+    startScan();
+  };
   $('#set-server').oninput = e => { S.server = e.target.value.trim(); save(); };
 }
 
@@ -453,6 +479,60 @@ function firstRun() {
 }
 
 const SPEEDS = [400, 600, 800, 1200, 1500, 2000, 2500, 3000];
+
+/* ── word prediction (BUILD.md condition C5) ─────────────────────────────
+ * 17 units for "എന്റെ പേര് ആദിത്യ" is 77 scan steps — two and a half minutes.
+ * Letter-by-letter does not make sentences practical, which is why Intel's
+ * single biggest win for Stephen Hawking was prediction, not a better tree.
+ *
+ * Seeded with common words, then it learns whatever gets typed. The learned
+ * half matters most: a person says their own name far more often than any
+ * word in a general corpus, and no general lexicon will ever contain it.
+ */
+const SEED_WORDS = [
+  'ഞാൻ', 'നീ', 'എന്റെ', 'പേര്', 'ആണ്', 'അതെ', 'ഇല്ല',
+  'നന്ദി', 'സുഖം', 'വെള്ളം', 'വേണം', 'എവിടെ',
+];
+const MAX_CANDIDATES = 5;
+const WORD_MASS = 0.34;        // share of probability words take from letters
+
+function lexicon() {
+  let learned = [];
+  try { learned = JSON.parse(localStorage.getItem('aksharascan-words') || '[]'); }
+  catch (_) {}
+  return [...new Set([...learned, ...SEED_WORDS])];
+}
+
+function learnWord(w) {
+  if (!w || [...w].length < 2) return;
+  try {
+    const prev = JSON.parse(localStorage.getItem('aksharascan-words') || '[]');
+    const next = [w, ...prev.filter(x => x !== w)].slice(0, 200);   // recency first
+    localStorage.setItem('aksharascan-words', JSON.stringify(next));
+  } catch (_) {}
+}
+
+/** The partial word currently being typed — everything since the last space. */
+function partial() {
+  const out = [];
+  for (let i = S.buf.length - 1; i >= 0; i--) {
+    if (S.buf[i].class === 'SP') break;
+    out.unshift(S.buf[i].char);
+  }
+  return out.join('');
+}
+
+/** Candidate completions, as {unitId: weight} for the tree. */
+function candidates() {
+  if (!S.predict) return null;
+  const pre = partial();
+  const hits = lexicon()
+    .filter(w => w.startsWith(pre) && w !== pre)
+    .slice(0, MAX_CANDIDATES);
+  if (!hits.length) return null;
+  const each = WORD_MASS / hits.length;
+  return Object.fromEntries(hits.map(w => [`w:${w}`, each]));
+}
 
 function setSpeed(ms) {
   S.period = ms;
@@ -489,7 +569,8 @@ function clearAll() {
 function save() {
   try {
     localStorage.setItem('aksharascan', JSON.stringify(
-      { mode: S.mode, period: S.period, audio: S.audio, tap: S.tap, server: S.server }));
+      { mode: S.mode, period: S.period, audio: S.audio, tap: S.tap,
+        predict: S.predict, server: S.server }));
   } catch (_) { /* private mode — settings just will not persist */ }
 }
 
@@ -502,6 +583,7 @@ function restore() {
   $('#set-mode').value = S.mode;
   $('#set-audio').checked = S.audio;
   $('#set-tap').checked = S.tap;
+  $('#set-predict').checked = S.predict !== false;
   $('#set-server').value = S.server || '';
 }
 

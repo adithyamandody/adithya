@@ -40,13 +40,22 @@ export function graftPause(root, pauseId = 'ctl_pause') {
   return root;
 }
 
-export function treeFor(D, ctx) {
+/* `extra` holds whole-word candidates: {id: weight}, weights summing to the
+ * share of probability mass words should take from letters. Giving words real
+ * mass is the point — it is what buys them short codewords and therefore makes
+ * a sentence finishable. This is condition C5 in BUILD.md. */
+export function treeFor(D, ctx, extra) {
   const allowed = D.legal[ctx] || D.legal.SP;
   const row = D.bigrams[ctx] || D.bigrams.SP;
   const probs = {};
   let z = 0;
   for (const u of allowed) { const p = row[u] ?? 1e-6; probs[u] = p; z += p; }
-  for (const u of allowed) probs[u] /= z;
+
+  const wordMass = extra ? Object.values(extra).reduce((a, b) => a + b, 0) : 0;
+  const keep = 1 - Math.min(0.5, wordMass);        // letters never drop below half
+  for (const u of allowed) probs[u] = (probs[u] / z) * keep;
+  if (extra) for (const [id, w] of Object.entries(extra)) probs[id] = w;
+
   return graftPause(buildTree(probs));
 }
 
@@ -122,11 +131,12 @@ export function simulate(D, ids, mode) {
  * rhythm) and corrupts the measurement.
  */
 export class ScanSession {
-  constructor({ mode, period, data, context, onFrame, onEmit, onIdle, now, schedule }) {
+  constructor({ mode, period, data, context, extra, onFrame, onEmit, onIdle, now, schedule }) {
     this.mode = mode;
     this.period = period;
     this.D = data;
     this.ctx = context || (() => 'SP');
+    this.extra = extra || null;   // whole-word candidates
     this.onFrame = onFrame || (() => {});
     this.onEmit = onEmit || (() => {});
     this.onIdle = onIdle || (() => {});
@@ -165,7 +175,7 @@ export class ScanSession {
   begin() {
     this.running = true;
     if (this.mode === 'B') {
-      this.node = treeFor(this.D, this.ctx());
+      this.node = treeFor(this.D, this.ctx(), this.extra);
       if (!this.node) { this.running = false; return; }
       if (this.node.unit) { this.running = false; this.onEmit(this.node.unit); return; }
     } else {

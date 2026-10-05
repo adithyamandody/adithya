@@ -239,3 +239,8 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--hot)}
   color:var(--ink);border:1px solid var(--line);border-radius:8px;
 }
 #practice small{font-size:11px;color:var(--dim);margin-left:-6px}
+.u.word{
+  font-family:var(--ml);min-width:auto;padding:0 14px;font-size:23px;
+  border-width:1.5px;border-style:dashed;
+}
+.u.word.hot{border-style:solid}

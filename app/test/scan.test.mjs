@@ -115,6 +115,34 @@ t('the unconstrained control offers every unit', () => {
   eq(leaves(treeForUnconstrained(D, 'VIR')).length, D.units.length);
 });
 
+console.log('\nword prediction (C5)');
+t('word candidates enter the tree and stay reachable', () => {
+  const extra = { 'w:എന്റെ': 0.17, 'w:എവിടെ': 0.17 };
+  const tree = treeFor(D, 'SP', extra);
+  for (const id of Object.keys(extra)) ok(codeOf(tree, id), `${id} unreachable`);
+});
+
+t('words get SHORT codes — the whole point of giving them mass', () => {
+  const extra = { 'w:എന്റെ': 0.34 };
+  const tree = treeFor(D, 'SP', extra);
+  const w = codeOf(tree, 'w:എന്റെ');
+  const letter = codeOf(tree, 'ka');
+  ok(w.steps <= letter.steps,
+     `word ${w.steps} steps vs letter ${letter.steps} — prediction would not pay`);
+});
+
+t('letters keep at least half the mass, so none becomes unreachable', () => {
+  const extra = Object.fromEntries(
+    Array.from({ length: 5 }, (_, i) => [`w:x${i}`, 0.4]));   // deliberately greedy
+  const tree = treeFor(D, 'SP', extra);
+  for (const id of D.legal.SP) ok(codeOf(tree, id), `${id} lost to word candidates`);
+});
+
+t('no candidates behaves exactly as before', () => {
+  eq(JSON.stringify(leaves(treeFor(D, 'SP')).sort()),
+     JSON.stringify(leaves(treeFor(D, 'SP', null)).sort()));
+});
+
 console.log('\ncounting');
 const SAMPLE = ['na', 's_ii', 'p_sp', 'sa', 's_u', 'kha', 'x_anu',
                 'p_sp', 'v_aa', 'nna', 's_oo'];

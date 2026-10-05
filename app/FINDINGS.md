@@ -288,3 +288,67 @@ Which user that helps is an empirical question the project should actually ask �
 and it argues for adding presses-per-message as a co-primary metric alongside
 steps, rather than a secondary one. For a user who fatigues, row–column may
 genuinely be the better system, and the project should be willing to say so.
+
+---
+
+# Finding 006 — prediction is what makes sentences possible, and it reverses 005
+
+**Date:** 5 October 2026 · prompted by a user trying to type a sentence ·
+`app/test/scan.test.mjs`
+
+Typing <span lang="ml">എന്റെ പേര് ആദിത്യ</span> ("my name is Adithya"), 17 units:
+
+| | scan steps | presses | at 2000 ms |
+|---|---|---|---|
+| A — row–column | 178 | 34 | 5 min 56 s |
+| B — AksharaScan, letter by letter | 77 | 44 | 2 min 34 s |
+| **B + word prediction (C5)** | **33** | **18** | **1 min 6 s** |
+
+**Prediction removes 57% of the steps and 59% of the presses** — far more than
+anything the scan tree itself achieved. It is the largest single effect measured
+in this project, and it is also the least novel: Intel's biggest win for Stephen
+Hawking was prediction, not a better tree.
+
+## It reverses finding 005
+
+Finding 005 recorded an honest embarrassment: B needed **more** presses than the
+baseline it replaced (25 vs 22 on the short sentence; 44 vs 34 here). Presses are
+the expensive resource for someone with limited motor control, so that was a real
+defect, not a quibble.
+
+With prediction, B takes **18 presses against row–column's 34.** The tradeoff
+disappears: fewer steps *and* roughly half the presses.
+
+So the claim on the poster becomes defensible without a caveat —
+**but only with prediction switched on.** Reporting B-without-prediction as the
+headline would be choosing the weaker and more flattering comparison.
+
+## What this does to the project's story
+
+The uncomfortable reading, which should be stated rather than buried: across six
+findings, the ranking of effects is
+
+1. **prediction** — 57% of steps (known since the 1980s)
+2. **using a binary tree at all** — 115 → 68 on the short sentence (Huffman, 1952)
+3. **a context model** — 68 → 50 (Roark 2013)
+4. **the legality constraint** — ~0% (the proposed contribution)
+
+Every large effect is someone else's. That is worth saying out loud at the table,
+because a judge who works it out unaided will trust nothing else on the poster.
+
+What is genuinely unclaimed remains what finding 004 identified: the **akshara
+tax** has never been measured, and **decompose-don't-cluster** has never been
+published. Both are empirical, both are real, and neither needs the constraint to
+be true.
+
+## Implementation note
+
+Candidates are injected into the tree with a probability mass of 0.34, capped so
+letters never fall below half. The lexicon is twelve common words plus whatever
+the user types, kept in `localStorage`, most-recent first.
+
+The learned half matters more than the seed: **a person says their own name far
+more often than any word in a general corpus**, and no general lexicon will ever
+contain <span lang="ml">ആദിത്യ</span>. For an AAC user the personal lexicon is
+most of the value — which is an argument for making it easy to import a word list,
+not for shipping a bigger dictionary.
