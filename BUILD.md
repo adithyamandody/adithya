@@ -1,3 +1,28 @@
+> ## ⚠️ SUPERSEDED — read `app/FINDINGS.md` first
+>
+> This document specifies the project as **proposed**. Eight findings since have
+> dismantled its central claim: the hard legality constraint buys **0.0%**, on
+> hand-estimated and corpus-measured models alike, at legal-set sizes from 32%
+> to 63%, on clean input and under mis-presses, with decomposed units and with
+> whole clusters. Four routes tested, four closed.
+>
+> **CLAIM 1 below is false and is left in place deliberately**, because a
+> pre-registered claim that failed is evidence of honest work, not something to
+> quietly edit away. What survives, and what the paper should actually be about,
+> is in `app/FINDINGS.md`:
+>
+> * the **akshara tax** — 2.3×, never measured for any Brahmic script
+> * **decompose, don't cluster** — 19%, never published
+> * **legality is free** — it needs no corpus, so it is worth having where no
+>   corpus exists, even though it adds nothing where one does
+> * the negative result itself, with its information-theoretic reason
+>
+> Ranked by effect, every large win here belongs to someone else: prediction
+> 57%, using a binary tree at all 41%, a context model 26%, the proposed
+> constraint ~0%. Saying that at the table is what makes the rest credible.
+
+---
+
 # DECISION: What the Student Builds, Starting Today
 
 **Date: 31 August 2026 · Deadline: IRIS submission 3 October 2026 · Decision is final.**
