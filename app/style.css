@@ -293,3 +293,12 @@ textarea{
 }
 #tour b.t{font-family:var(--ml);font-size:1.5em;vertical-align:-.1em}
 #tour em{font-style:normal;font-weight:600}
+.warnbox{
+  background:#2a2317;border:1px solid #6b5a2e;color:#e8d9ae;
+  border-radius:9px;padding:11px 14px;font-size:13.5px;line-height:1.5;max-width:460px;
+}
+label small{font-weight:400;opacity:.7}
+input[type=password]{
+  background:var(--panel);color:var(--ink);border:1px solid var(--line);
+  border-radius:9px;padding:11px 12px;font-size:14px;font-family:ui-monospace,Menlo,monospace;
+}

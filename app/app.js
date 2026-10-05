@@ -12,6 +12,7 @@
 
 import { ScanSession, simulate, decompose } from './scan.js';
 import { STEPS, sentenceFor, makeState, step as tourStep, isLast } from './tour.js';
+import { PROVIDERS, say, scriptOf, routeFor, cacheStats, cacheClear } from './voice.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -31,6 +32,8 @@ const S = {
   predict: true,    // word prediction (BUILD.md C5)
   layer: 'ml',      // 'ml' | 'num' | 'eng'
   action: 'speak',  // what a hold / chord does
+  voiceFor: { ml: 'system', en: 'system' },
+  keys: {},
 };
 
 /* ══════════════════════════ data ══════════════════════════ */
@@ -487,19 +490,39 @@ function tick() {
 
 /* ═══════════════════════ output view ══════════════════════ */
 
-function speak() {
+function voiceSettings() {
+  return { voiceFor: S.voiceFor || {}, keys: S.keys || {} };
+}
+
+async function speak() {
   const t = text();
   if (!t) return status('Nothing to speak.');
-  if (!('speechSynthesis' in window)) return status('No speech synthesis on this device.');
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(t);
-  u.lang = 'ml-IN';
-  const ml = speechSynthesis.getVoices().find(v => /^ml/i.test(v.lang));
-  if (ml) u.voice = ml;
-  else status('⚠️ No Malayalam voice installed — Settings → Accessibility → '
-            + 'Text-to-speech → install Malayalam. Falling back to default voice.');
-  u.onend = () => { if (ml) status('Spoken.'); };
-  speechSynthesis.speak(u);
+  const r = await say(t, voiceSettings());
+  if (!r.ok) return status(`Could not speak: ${r.why}`);
+  if (r.fellBack) status(`Cloud voice failed (${r.why}) — used the device voice instead.`);
+  else status(r.cached ? 'Spoken (from cache, no network used).'
+                       : `Spoken via ${PROVIDERS[r.provider].name}.`);
+}
+
+/* Render every quick phrase once and cache it, so the urgent things play
+   instantly and offline from then on. This is the whole point of allowing a
+   network at all: it is used to LEARN a phrase, never to say one. */
+async function prefetchPhrases() {
+  const list = phrases();
+  const btn = $('#prefetch');
+  let done = 0, failed = 0, skipped = 0;
+  for (const p of list) {
+    btn.textContent = `Preparing ${done + failed + skipped + 1} of ${list.length}…`;
+    const r = await say(p, voiceSettings(), { prefetch: true });
+    if (r.prefetch) skipped++;
+    else if (r.ok) done++;
+    else failed++;
+  }
+  const n = await cacheStats();
+  btn.textContent = 'Prepare phrases for offline';
+  $('#cache-note').textContent =
+    `${done} rendered, ${failed} failed, ${skipped} on the device voice. `
+    + `${n} clips cached — these now play with no network.`;
 }
 
 async function write() {
@@ -621,6 +644,15 @@ function wire() {
   $('#set-mode').onchange = e => { S.mode = e.target.value; save(); startScan(); };
   $('#set-audio').onchange = e => { S.audio = e.target.checked; save(); };
   $('#set-tap').onchange = e => { S.tap = e.target.checked; save(); };
+  $('#voice-ml').onchange = e => { S.voiceFor = { ...S.voiceFor, ml: e.target.value }; save(); };
+  $('#voice-en').onchange = e => { S.voiceFor = { ...S.voiceFor, en: e.target.value }; save(); };
+  for (const id of ['google', 'deepgram', 'elevenlabs'])
+    $(`#key-${id}`).oninput = e => { S.keys = { ...S.keys, [id]: e.target.value.trim() }; save(); };
+  $('#prefetch').onclick = prefetchPhrases;
+  $('#cache-clear').onclick = async () => {
+    await cacheClear();
+    $('#cache-note').textContent = 'Cache cleared — clips will be fetched again.';
+  };
   $('#set-action').onchange = e => { S.action = e.target.value; save(); };
   $('#set-predict').onchange = e => { S.predict = e.target.checked; save(); startScan(); };
   $('#forget').onclick = () => {
@@ -967,7 +999,8 @@ function save() {
   try {
     localStorage.setItem('aksharascan', JSON.stringify(
       { mode: S.mode, period: S.period, audio: S.audio, tap: S.tap,
-        predict: S.predict, action: S.action, server: S.server }));
+        predict: S.predict, action: S.action, server: S.server,
+        voiceFor: S.voiceFor, keys: S.keys }));
   } catch (_) { /* private mode — settings just will not persist */ }
 }
 
@@ -982,6 +1015,13 @@ function restore() {
   $('#set-tap').checked = S.tap;
   $('#set-predict').checked = S.predict !== false;
   $('#set-action').value = S.action || 'speak';
+  $('#voice-ml').value = (S.voiceFor || {}).ml || 'system';
+  $('#voice-en').value = (S.voiceFor || {}).en || 'system';
+  for (const id of ['google', 'deepgram', 'elevenlabs'])
+    $(`#key-${id}`).value = (S.keys || {})[id] || '';
+  cacheStats().then(n => {
+    if (n) $('#cache-note').textContent = `${n} clips cached — these play with no network.`;
+  });
   $('#set-server').value = S.server || '';
 }
 

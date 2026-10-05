@@ -83,6 +83,36 @@ Capacitor needs JDK 21; macOS here has 17. `android/gradle.properties` pins
 Studio, so no separate JDK install is required. If Android Studio moves, update
 that one line.
 
+## Voice
+
+The device voice is the default and the fallback for everything. It works
+offline, which is why it stays the fallback: a person who cannot talk losing
+their voice because WiFi dropped is not an acceptable failure.
+
+Cloud voices are an optional upgrade, set per language in Settings:
+
+| Provider | Malayalam | English | Note |
+|---|---|---|---|
+| Device | ✓ | ✓ | Offline. No key, no cost |
+| Google Cloud TTS | ✓ | ✓ | `ml-IN-Wavenet-C`. Cheapest per character |
+| ElevenLabs | ✓ | ✓ | Most natural; multilingual model |
+| **Deepgram Aura** | ✗ | ✓ | **No Malayalam voice exists.** English layer only |
+
+**Every cloud clip is cached in IndexedDB.** A phrase is fetched once and plays
+from the device forever after — instantly, offline, at no further cost. The
+network is needed to *learn* a sentence, never to *say* one again.
+
+So after setting a key, press **Prepare phrases for offline** in Settings. That
+renders every quick phrase once. From then on the urgent utterances work with
+the network off, which is the only state worth designing for.
+
+Routing is by script, not by preference: Malayalam text never goes to a provider
+with no Malayalam voice, whatever the dropdown says. A test pins that, because
+the failure would be a device that sounds confidently wrong.
+
+⚠️ API keys live on the device and are readable by anyone who can open its
+browser tools. Use a key restricted to text-to-speech with a spending cap.
+
 ## Before a fair
 
 1. `npm test` — 37 tests must pass.

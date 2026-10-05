@@ -167,6 +167,48 @@
      because pressing two switches at once is hard with impaired motor control —
      and a chord works too, because some people find that easier than holding.</p>
 
+  <h3>Voice</h3>
+  <p class="muted">The device voice works offline and is the fallback for
+     everything. A cloud voice sounds better but needs a network — so every
+     clip is cached after the first fetch and plays offline from then on.</p>
+
+  <label>Malayalam voice
+    <select id="voice-ml">
+      <option value="system" selected>Device voice — offline</option>
+      <option value="google">Google Cloud TTS — ml-IN-Wavenet-C</option>
+      <option value="elevenlabs">ElevenLabs — multilingual</option>
+    </select>
+  </label>
+
+  <label>English voice <small>(the ABC layer)</small>
+    <select id="voice-en">
+      <option value="system" selected>Device voice — offline</option>
+      <option value="deepgram">Deepgram Aura — English only</option>
+      <option value="google">Google Cloud TTS</option>
+      <option value="elevenlabs">ElevenLabs</option>
+    </select>
+  </label>
+
+  <label>Google Cloud API key
+    <input id="key-google" type="password" autocomplete="off" spellcheck="false" placeholder="AIza…">
+  </label>
+  <label>Deepgram API key
+    <input id="key-deepgram" type="password" autocomplete="off" spellcheck="false">
+  </label>
+  <label>ElevenLabs API key
+    <input id="key-elevenlabs" type="password" autocomplete="off" spellcheck="false">
+  </label>
+
+  <p class="warnbox">⚠️ Keys are stored on this device and are visible to anyone
+     who can open its browser tools. Use a key restricted to text-to-speech with
+     a spending cap, and never a key that can do anything else.</p>
+
+  <div class="row">
+    <button id="prefetch">Prepare phrases for offline</button>
+    <button id="cache-clear" class="ghost">Clear cached audio</button>
+  </div>
+  <p id="cache-note" class="muted"></p>
+
   <h3>Tour</h3>
   <p class="muted">Six steps: press, wait, one letter, your name, your age, then send it.</p>
   <button id="tour-start">Start the tour again</button>
