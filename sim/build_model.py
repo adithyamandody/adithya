@@ -50,6 +50,11 @@ MALAYALAM = {
     "VIR": [(0x0D4D, 0x0D4D)],              # virama / chandrakkala
     "ANU": [(0x0D02, 0x0D03)],              # anusvara, visarga
     "CH":  [(0x0D7A, 0x0D7F)],              # chillu letters
+    # Digits. Without these an age, a time, a phone number or a quantity cannot
+    # be typed at all — a real hole for an AAC device, and one the corpus was
+    # silently papering over by dropping them.
+    "NUM": [(0x0030, 0x0039),               # 0-9, what Malayalam text mostly uses
+            (0x0D66, 0x0D6F)],              # ൦-൯, the Malayalam digits
 }
 PUNCT = " .,?!\n\t"
 SKIP = {0x200C, 0x200D}      # ZWNJ / ZWJ: rendering hints, not units

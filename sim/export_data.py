@@ -44,13 +44,17 @@ SIGNS = [
 CHILLU = [("c_nn", "ൺ"), ("c_n", "ൻ"), ("c_r", "ർ"), ("c_l", "ൽ"), ("c_ll", "ൾ")]
 MARKS = [("x_vir", "്"), ("x_anu", "ം"), ("x_vis", "ഃ")]
 PUNCT = [("p_sp", " "), ("p_dot", "."), ("p_com", ","), ("p_q", "?")]
+# Digits. Without them an age, a time, a phone number or a quantity cannot be
+# typed at all. Kept in step with build_model.py, which learns their real
+# frequencies from the corpus.
+DIGITS = [(f"d_{i}", str(i)) for i in range(10)]
 CONTROL = [("ctl_undo", "⌫"), ("ctl_clear", "✕"), ("ctl_pause", "⏸")]
 
 CLASS_OF = {}
 UNITS = []
 for ids, cls in (
     (VOWELS, "V"), (CONSONANTS, "C"), (SIGNS, "S"), (CHILLU, "CH"),
-    (PUNCT, "SP"), (CONTROL, "CTL"),
+    (PUNCT, "SP"), (DIGITS, "NUM"), (CONTROL, "CTL"),
 ):
     for uid, ch in ids:
         CLASS_OF[uid] = cls
@@ -67,7 +71,8 @@ RANK = """p_sp x_vir s_aa s_i ka na s_u ta ra x_anu la ya ma va s_e sa tta lla
 pa nna s_ii s_ee cha da nga s_oo c_n c_r v_a v_i v_e nja bha sha ha ga c_l ssa
 zha rra v_u dda ba dha ja s_uu v_aa tha kha v_oo c_ll p_dot c_nn gha chha jha
 ttha ddha pha s_ai s_o s_ri v_ee v_ai v_o v_au v_ii v_uu v_ri s_au x_vis
-p_com p_q ctl_undo ctl_clear ctl_pause""".split()
+p_com p_q d_1 d_2 d_0 d_3 d_5 d_4 d_9 d_6 d_8 d_7
+ctl_undo ctl_clear ctl_pause""".split()
 
 assert set(RANK) == set(CLASS_OF), (
     f"inventory/rank mismatch: {set(CLASS_OF) ^ set(RANK)}"
@@ -115,9 +120,10 @@ UNIGRAM = {u: p / _z for u, p in UNIGRAM.items()}
 #   after CH   syllable is closed — consonant or space only
 #
 TRANSITIONS = {
-    "SP":  {"C": .72, "V": .24, "CTL": .04},
+    "SP":  {"C": .68, "V": .22, "NUM": .06, "CTL": .04},
     "C":   {"S": .44, "C": .22, "VIR": .16, "SP": .08, "ANU": .04,
             "CH": .02, "CTL": .04},
+    "NUM": {"NUM": .55, "SP": .40, "CTL": .05},
     "S":   {"C": .54, "SP": .33, "ANU": .05, "CH": .04, "CTL": .04},
     "VIR": {"C": .93, "SP": .03, "CTL": .04},
     "V":   {"C": .84, "SP": .09, "ANU": .03, "CTL": .04},
@@ -125,7 +131,7 @@ TRANSITIONS = {
     "CH":  {"SP": .54, "C": .42, "CTL": .04},
     # After a control key the app recomputes the real context from the text;
     # this row is only a fallback for an empty buffer, so it mirrors SP.
-    "CTL": {"C": .72, "V": .24, "CTL": .04},
+    "CTL": {"C": .68, "V": .22, "NUM": .06, "CTL": .04},
 }
 
 CONTEXTS = list(TRANSITIONS)
