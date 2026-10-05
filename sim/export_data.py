@@ -79,8 +79,13 @@ UNIGRAM = {u: p / _z for u, p in UNIGRAM.items()}
 
 # Control units get a small fixed mass — they must stay reachable but shallow
 # enough to be usable, and must not distort the comparison.
-for u in ("ctl_undo", "ctl_clear"):
-    UNIGRAM[u] = 0.012
+# Undo is NOT rare. Real switch users mis-press at 5-15%, so correcting is one
+# of the most frequent operations there is — more frequent than most letters.
+# At the old 0.012 it cost 6 steps against 4 for a letter, i.e. fixing a mistake
+# cost more than making one. Clear goes the other way: it is destructive and
+# rare, so it should sit DEEP where it cannot be hit by accident.
+UNIGRAM["ctl_undo"] = 0.060
+UNIGRAM["ctl_clear"] = 0.003
 # ctl_pause must be the STRICTLY least likely unit in every context, so Huffman
 # places it at the end of the all-wait path. That path is what a user walks by
 # doing nothing, so it must land on an explicit "pause" rather than stealing a

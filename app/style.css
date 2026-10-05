@@ -212,3 +212,22 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--hot)}
 .idlemsg{color:var(--dim);font-size:15px;padding:18px 4px;line-height:1.5}
 .u.pause{flex-direction:column;gap:1px;min-width:62px;font-size:19px}
 .u.pause small{font-size:9px;letter-spacing:.06em;text-transform:uppercase;opacity:.7}
+
+/* ── on-screen controls ────────────────────────────────────────────────
+   Speed lived in Settings, where nobody found it, and the only backspace was
+   buried in the scan tree. Both belong on the screen you are actually using. */
+#tools{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+#tools .grp{display:flex;gap:7px;align-items:center}
+#tools .grp.right{margin-left:auto}
+#tools .lbl{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+#tools button{padding:8px 13px;font-size:14px;border-radius:9px}
+#tools #slower,#tools #faster{
+  width:38px;padding:8px 0;font-size:19px;line-height:1;font-weight:600;
+}
+#tools button.danger{color:#f0a0a0;border-color:#5a3236}
+#tools button.danger:active{background:#4a2126}
+#speed{
+  font-variant-numeric:tabular-nums;font-size:14px;min-width:76px;text-align:center;
+  color:var(--ink);background:#1c2430;border:1px solid var(--line);
+  border-radius:8px;padding:8px 6px;
+}

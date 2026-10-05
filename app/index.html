@@ -44,6 +44,19 @@
   <div id="practice" hidden></div>
   <div id="text" class="ml" aria-live="polite"><span class="hint">Press <kbd>space</kbd>, tap, or use the switch</span></div>
 
+  <div id="tools">
+    <div class="grp">
+      <span class="lbl">Speed</span>
+      <button id="slower" title="Slower">−</button>
+      <output id="speed">1500 ms</output>
+      <button id="faster" title="Faster">+</button>
+    </div>
+    <div class="grp right">
+      <button id="bksp" title="Delete the last letter">⌫ Backspace</button>
+      <button id="clr" class="danger" title="Delete everything">Clear</button>
+    </div>
+  </div>
+
   <div id="ask">
     <span id="ask-text">Is your letter in the <b class="teal">teal</b> group?</span>
     <span id="ask-keys"><b>press</b> = yes &nbsp;·&nbsp; <b>wait</b> = no</span>
@@ -110,8 +123,10 @@
       <option value="600">600 ms</option>
       <option value="800">800 ms — typical</option>
       <option value="1200">1200 ms</option>
-      <option value="1500" selected>1500 ms — learning</option>
-      <option value="2000">2000 ms — slow</option>
+      <option value="1500">1500 ms — learning</option>
+      <option value="2000" selected>2000 ms — slow</option>
+      <option value="2500">2500 ms</option>
+      <option value="3000">3000 ms — very slow</option>
     </select>
   </label>
 

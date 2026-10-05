@@ -19,7 +19,7 @@ const D = { units: [], byId: {}, bigrams: {}, legal: {}, grid: null };
 const S = {
   buf: [],            // array of unit objects
   mode: 'B',
-  period: 1500,   // first-run friendly; Settings goes down to 400
+  period: 2000,   // start slow; the on-screen + button speeds it up
   audio: true,
   tap: true,
   server: '',
@@ -338,15 +338,19 @@ function wire() {
   $('[data-act=speak]').onclick = speak;
   $('[data-act=write]').onclick = write;
   $('[data-act=edit]').onclick = () => show('compose');
-  $('[data-act=clear]').onclick = () => { S.buf = []; paintText(); show('compose'); startScan(); };
+  $('[data-act=clear]').onclick = () => { clearAll(); show('compose'); };
   $('#cmp-run').onclick = () => runCompare(SAMPLE);
   $('#cmp-typed').onclick = () => runCompare(S.buf.map(u => u.id));
+  $('#slower').onclick = () => nudgeSpeed(+1);   // + index = longer period
+  $('#faster').onclick = () => nudgeSpeed(-1);
+  $('#bksp').onclick = backspace;
+  $('#clr').onclick = clearAll;
   $('#help-open').onclick = () => $('#help').classList.add('on');
   $('#help-go').onclick = () => { $('#help').classList.remove('on'); seen(); pause(); };
   $('#help-practice').onclick = () => { $('#help').classList.remove('on'); seen(); startPractice(); };
   $('#test-reset').onclick = () => { testN = 0; $('#test-lamp').innerHTML = ''; $('#test-out').textContent = 'no presses yet'; };
 
-  $('#set-period').onchange = e => { S.period = +e.target.value; save(); startScan(); };
+  $('#set-period').onchange = e => setSpeed(+e.target.value);
   $('#set-mode').onchange = e => { S.mode = e.target.value; save(); startScan(); };
   $('#set-audio').onchange = e => { S.audio = e.target.checked; save(); };
   $('#set-tap').onchange = e => { S.tap = e.target.checked; save(); };
@@ -358,6 +362,40 @@ function seen() {
 }
 function firstRun() {
   try { return !localStorage.getItem('aksharascan-seen'); } catch (_) { return true; }
+}
+
+const SPEEDS = [400, 600, 800, 1200, 1500, 2000, 2500, 3000];
+
+function setSpeed(ms) {
+  S.period = ms;
+  $('#speed').textContent = `${ms} ms`;
+  const sel = $('#set-period');
+  if (sel && [...sel.options].some(o => +o.value === ms)) sel.value = ms;
+  save();
+  if (!S.paused) startScan();          // apply immediately, mid-sentence
+}
+
+function nudgeSpeed(dir) {
+  const i = SPEEDS.indexOf(S.period);
+  const j = Math.min(SPEEDS.length - 1, Math.max(0, (i < 0 ? 5 : i) + dir));
+  setSpeed(SPEEDS[j]);
+}
+
+/* Backspace and clear, reachable by hand. They also exist inside the scan tree
+   for a genuine one-switch user — these are for whoever is holding the tablet. */
+function backspace() {
+  if (!S.buf.length) return;
+  S.buf.pop();
+  paintText();
+  if (!S.paused) startScan();          // the context changed, so rebuild the tree
+}
+
+function clearAll() {
+  S.buf = [];
+  S.practice = null;
+  $('#practice').hidden = true;
+  paintText();
+  if (!S.paused) startScan();
 }
 
 function save() {
@@ -372,6 +410,7 @@ function restore() {
     Object.assign(S, JSON.parse(localStorage.getItem('aksharascan') || '{}'));
   } catch (_) { /* ignore */ }
   $('#set-period').value = S.period;
+  $('#speed').textContent = `${S.period} ms`;
   $('#set-mode').value = S.mode;
   $('#set-audio').checked = S.audio;
   $('#set-tap').checked = S.tap;
