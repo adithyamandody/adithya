@@ -75,6 +75,7 @@
   "p_com",
   "p_q",
   "ctl_undo",
-  "ctl_clear"
+  "ctl_clear",
+  "ctl_pause"
  ]
 }

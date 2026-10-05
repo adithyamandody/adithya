@@ -21,6 +21,25 @@ export function buildTree(probs) {
 
 /** The tree for one context: restricted to legal successors, renormalised.
  *  The restriction is the contribution — everything else is Roark 2013. */
+/* Graft an explicit PAUSE onto the all-wait path.
+ *
+ * Doing nothing must not type. Giving the pause the smallest probability does
+ * NOT work: the all-`lo` spine does not track the least-likely leaf, so some
+ * real letter ends up there and becomes untypeable (the session tests catch
+ * this). So place it by construction: find the leaf the all-wait path reaches
+ * and split it, pause on the wait side, the original letter one press away.
+ *
+ * Cost: one extra step for the single least-wait-reachable unit per context.
+ */
+export function graftPause(root, pauseId = 'ctl_pause') {
+  if (!root) return root;
+  if (root.unit) return { p: root.p, lo: { p: 0, unit: pauseId }, hi: root };
+  let parent = root, node = root.lo;
+  while (node && !node.unit) { parent = node; node = node.lo; }
+  parent.lo = { p: node.p, lo: { p: 0, unit: pauseId }, hi: node };
+  return root;
+}
+
 export function treeFor(D, ctx) {
   const allowed = D.legal[ctx] || D.legal.SP;
   const row = D.bigrams[ctx] || D.bigrams.SP;
@@ -28,7 +47,7 @@ export function treeFor(D, ctx) {
   let z = 0;
   for (const u of allowed) { const p = row[u] ?? 1e-6; probs[u] = p; z += p; }
   for (const u of allowed) probs[u] /= z;
-  return buildTree(probs);
+  return graftPause(buildTree(probs));
 }
 
 /** Unconstrained tree for the same context — the C3b control (Roark-style:
@@ -103,13 +122,15 @@ export function simulate(D, ids, mode) {
  * rhythm) and corrupts the measurement.
  */
 export class ScanSession {
-  constructor({ mode, period, data, context, onFrame, onEmit, now, schedule }) {
+  constructor({ mode, period, data, context, onFrame, onEmit, onIdle, now, schedule }) {
     this.mode = mode;
     this.period = period;
     this.D = data;
     this.ctx = context || (() => 'SP');
     this.onFrame = onFrame || (() => {});
     this.onEmit = onEmit || (() => {});
+    this.onIdle = onIdle || (() => {});
+    this.cycles = 0;
     this.now = now || (() => (typeof performance !== 'undefined'
       ? performance.now() : Date.now()));
     this.schedule = schedule || (typeof requestAnimationFrame !== 'undefined'
@@ -124,6 +145,16 @@ export class ScanSession {
 
   press() { this.pressed = true; }
   stop() { this.running = false; }
+
+  /* A selection requires at least one press. Walking the all-wait path to a
+     leaf is NOT a selection — it means the user is not there. Without this the
+     scanner types on its own: leave it alone and it emits the least-likely unit
+     of each context, over and over. (Reported from the live app: three letters
+     appeared with nobody touching anything.)
+
+     Cost: the single least-likely unit in each context cannot be reached with
+     zero presses. That is a far better trade than idling into gibberish. */
+  idled() { return this.presses === 0; }
 
   begin() {
     this.running = true;
@@ -165,13 +196,20 @@ export class ScanSession {
   _advance(tookIt) {
     if (this.mode === 'B') {
       this.node = tookIt ? this.node.hi : this.node.lo;
-      if (this.node.unit) { this.running = false; this.onEmit(this.node.unit); return; }
+      if (this.node.unit) {
+        this.running = false;
+        if (this.idled()) this.onIdle(); else this.onEmit(this.node.unit);
+        return;
+      }
       this._step();
       return;
     }
     if (this.phase === 'row') {
+      if (this.cycles >= 2 && !tookIt) {       // two full row passes, no press
+        this.running = false; this.onIdle(); return;
+      }
       if (tookIt) { this.phase = 'col'; this.c = 0; }
-      else this.r = (this.r + 1) % this.rows;
+      else { this.r = (this.r + 1) % this.rows; if (this.r === 0) this.cycles++; }
       this._step();
       return;
     }
@@ -180,6 +218,9 @@ export class ScanSession {
       this.running = false;
       if (id) this.onEmit(id);
       return;
+    }
+    if (this.phase === 'col' && this.cycles >= 2) {   // two full passes, no press
+      this.running = false; this.onIdle(); return;
     }
     this.c++;
     if (this.c >= this.cols || this.r * this.cols + this.c >= this.order.length) {

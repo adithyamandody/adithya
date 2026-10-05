@@ -31,9 +31,14 @@ const eq = (a, b, m = '') => {
 const ok = (c, m) => { if (!c) throw new Error(m); };
 
 console.log('\ndata');
-t('75 units, 8 contexts', () => {
-  eq(D.units.length, 75);
+t('76 units (75 typeable + pause), 8 contexts', () => {
+  eq(D.units.length, 76);
   eq(Object.keys(D.legal).length, 8);
+  /* ctl_pause is not typeable: it is grafted onto the all-wait path at runtime
+     so that doing nothing pauses instead of typing. It must never appear in a
+     legality set, or it becomes a selectable character. */
+  for (const [ctx, list] of Object.entries(D.legal))
+    ok(!list.includes('ctl_pause'), `${ctx} offers ctl_pause as a letter`);
 });
 t('every legal id exists in the inventory', () => {
   const ids = new Set(D.units.map(u => u.id));
@@ -93,10 +98,11 @@ t('hand-checked 4-symbol tree: a=1 step, the rest deeper', () => {
 t('a single-symbol tree is a leaf', () => {
   eq(buildTree({ only: 1 }).unit, 'only');
 });
-t('leaves() of a context tree equal that context\'s legal set', () => {
+t('a context tree holds exactly its legal set, plus the grafted pause', () => {
   for (const ctx of Object.keys(D.legal)) {
     const got = leaves(treeFor(D, ctx)).sort();
-    eq(got.join(','), [...D.legal[ctx]].sort().join(','), ctx);
+    const want = [...D.legal[ctx], 'ctl_pause'].sort();
+    eq(got.join(','), want.join(','), ctx);
   }
 });
 t('every legal unit is reachable in its context', () => {

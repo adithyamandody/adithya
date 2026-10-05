@@ -34,7 +34,7 @@ const ok = (c, m) => { if (!c) throw new Error(m); };
 function drive({ mode, ctx = 'SP', wants, period = 800, maxFrames = 400 }) {
   let clock = 0;
   const queue = [];
-  let emitted = null;
+  let emitted = null, idled = false;
   const frames = [];
 
   const s = new ScanSession({
@@ -42,29 +42,62 @@ function drive({ mode, ctx = 'SP', wants, period = 800, maxFrames = 400 }) {
     context: () => ctx,
     onFrame: f => frames.push(f),
     onEmit: id => { emitted = id; },
+    onIdle: () => { idled = true; },
     now: () => clock,
     schedule: fn => queue.push(fn),
   });
   s.begin();
 
   let n = 0;
-  while (queue.length && emitted === null && n++ < maxFrames) {
+  while (queue.length && emitted === null && !idled && n++ < maxFrames) {
     // Decide before the tick whether this highlighted frame is the one we want
     const f = frames[frames.length - 1];
     if (f && wants(f)) s.press();
     else clock += period;                 // let it time out
     queue.shift()();
   }
-  return { emitted, presses: s.presses, steps: s.steps, frames, session: s };
+  return { emitted, idled, presses: s.presses, steps: s.steps, frames, session: s };
 }
 
 console.log('\nmode B — constrained tree');
 
-t('never pressing still terminates, at a leaf', () => {
+/* Reported from the live app: three letters appeared with nobody touching
+   anything. Walking the all-wait path is not a selection — it means the user
+   is not there. */
+t('doing nothing types NOTHING — it idles', () => {
   const r = drive({ mode: 'B', wants: () => false });
-  ok(r.emitted, 'nothing emitted');
+  ok(r.idled, 'did not report idling');
+  eq(r.emitted, null, 'emitted a unit with zero presses');
   eq(r.presses, 0, 'presses');
-  ok(D.legal.SP.includes(r.emitted), 'emitted an illegal unit');
+});
+
+/* The fix that makes the idle guard safe: an explicit pause sits at the end of
+   the all-wait path, so no real letter is sacrificed to it. */
+t('the all-wait path ends on PAUSE in every context', () => {
+  for (const ctx of Object.keys(D.legal)) {
+    let n = treeFor(D, ctx);
+    while (n && !n.unit) n = n.lo;
+    eq(n.unit, 'ctl_pause', `${ctx} all-wait path:`);
+  }
+});
+
+t('no letter is made untypeable by the pause graft', () => {
+  for (const ctx of Object.keys(D.legal)) {
+    const tree = treeFor(D, ctx);
+    for (const id of D.legal[ctx]) ok(codeOf(tree, id), `${ctx} lost ${id}`);
+  }
+});
+
+t('mode A also idles instead of typing, after two full passes', () => {
+  const r = drive({ mode: 'A', wants: () => false, maxFrames: 400 });
+  ok(r.idled, 'row-column did not idle');
+  eq(r.emitted, null, 'row-column typed something unprompted');
+});
+
+t('one press is enough to make a real selection', () => {
+  const r = drive({ mode: 'B', wants: f => f.hot.includes('ka') });
+  eq(r.emitted, 'ka');
+  ok(r.presses >= 1, 'a selection must cost at least one press');
 });
 
 t('an illegal unit can never be emitted, whatever you press', () => {
@@ -72,7 +105,9 @@ t('an illegal unit can never be emitted, whatever you press', () => {
     const legal = new Set(D.legal[ctx]);
     for (const style of [() => true, () => false, (() => { let i = 0; return () => i++ % 2 === 0; })()]) {
       const r = drive({ mode: 'B', ctx, wants: style });
-      ok(legal.has(r.emitted), `${ctx} emitted illegal ${r.emitted}`);
+      // null is a valid outcome now: zero presses means the user is not there
+      ok(r.emitted === null || legal.has(r.emitted),
+         `${ctx} emitted illegal ${r.emitted}`);
     }
   }
 });

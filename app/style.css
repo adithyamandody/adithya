@@ -209,3 +209,4 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--hot)}
   font:12px/1 ui-monospace,Menlo,monospace;background:#2b3542;color:var(--ink);
   border:1px solid #3c4858;border-bottom-width:2px;border-radius:5px;padding:3px 7px;
 }
+.idlemsg{color:var(--dim);font-size:15px;padding:18px 4px;line-height:1.5}

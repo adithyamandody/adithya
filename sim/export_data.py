@@ -44,7 +44,7 @@ SIGNS = [
 CHILLU = [("c_nn", "ൺ"), ("c_n", "ൻ"), ("c_r", "ർ"), ("c_l", "ൽ"), ("c_ll", "ൾ")]
 MARKS = [("x_vir", "്"), ("x_anu", "ം"), ("x_vis", "ഃ")]
 PUNCT = [("p_sp", " "), ("p_dot", "."), ("p_com", ","), ("p_q", "?")]
-CONTROL = [("ctl_undo", "⌫"), ("ctl_clear", "✕")]
+CONTROL = [("ctl_undo", "⌫"), ("ctl_clear", "✕"), ("ctl_pause", "⏸")]
 
 CLASS_OF = {}
 UNITS = []
@@ -67,7 +67,7 @@ RANK = """p_sp x_vir s_aa s_i ka na s_u ta ra x_anu la ya ma va s_e sa tta lla
 pa nna s_ii s_ee cha da nga s_oo c_n c_r v_a v_i v_e nja bha sha ha ga c_l ssa
 zha rra v_u dda ba dha ja s_uu v_aa tha kha v_oo c_ll p_dot c_nn gha chha jha
 ttha ddha pha s_ai s_o s_ri v_ee v_ai v_o v_au v_ii v_uu v_ri s_au x_vis
-p_com p_q ctl_undo ctl_clear""".split()
+p_com p_q ctl_undo ctl_clear ctl_pause""".split()
 
 assert set(RANK) == set(CLASS_OF), (
     f"inventory/rank mismatch: {set(CLASS_OF) ^ set(RANK)}"
@@ -81,6 +81,15 @@ UNIGRAM = {u: p / _z for u, p in UNIGRAM.items()}
 # enough to be usable, and must not distort the comparison.
 for u in ("ctl_undo", "ctl_clear"):
     UNIGRAM[u] = 0.012
+# ctl_pause must be the STRICTLY least likely unit in every context, so Huffman
+# places it at the end of the all-wait path. That path is what a user walks by
+# doing nothing, so it must land on an explicit "pause" rather than stealing a
+# real letter. Without this, the least-likely letter of each context becomes
+# untypeable — which the session tests catch.
+# ctl_pause is NOT typeable and is excluded from the legality sets below. The
+# scanner grafts it onto the all-wait path at runtime, because probability alone
+# cannot place it there — the all-lo spine does not track the least-likely leaf.
+UNIGRAM["ctl_pause"] = 1e-7
 _z = sum(UNIGRAM.values())
 UNIGRAM = {u: p / _z for u, p in UNIGRAM.items()}
 
@@ -144,8 +153,10 @@ GRID_ORDER = (
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
 
-    legal = {c: sorted(conditional(c)) for c in CONTEXTS}
-    bigrams = {c: {u: round(p, 8) for u, p in conditional(c).items()}
+    legal = {c: sorted(u for u in conditional(c) if u != "ctl_pause")
+             for c in CONTEXTS}
+    bigrams = {c: {u: round(p, 8) for u, p in conditional(c).items()
+                   if u != "ctl_pause"}
                for c in CONTEXTS}
 
     files = {

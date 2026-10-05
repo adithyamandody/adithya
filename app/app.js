@@ -24,6 +24,7 @@ const S = {
   tap: true,
   server: '',
   session: null,
+  paused: false,
   lastPressAt: 0,
   practice: null,   // {id, char} the unit the guide is asking for
 };
@@ -64,6 +65,7 @@ function startScan() {
     context,
     onFrame: paintScan,
     onEmit: commit,
+    onIdle: pause,
   });
   sess.presses = prev ? prev.presses : 0;     // counters persist across units
   sess.steps = prev ? prev.steps : 0;
@@ -72,9 +74,19 @@ function startScan() {
   sess.begin();
 }
 
+/* Nobody pressed: stop, do not type, and say so. */
+function pause() {
+  S.paused = true;
+  $('#ask-text').innerHTML = 'Paused — nothing was pressed.';
+  $('#ask-keys').innerHTML = '<b>press</b> to start again';
+  $('#scan').innerHTML = '<p class="idlemsg">Waiting for you. '
+    + 'Nothing is typed while you do nothing.</p>';
+}
+
 function commit(unitId) {
   const u = D.byId[unitId];
   if (!u) return;
+  if (u.id === 'ctl_pause') { pause(); return; }
   if (u.id === 'ctl_undo') S.buf.pop();
   else if (u.id === 'ctl_clear') S.buf = [];
   else S.buf.push(u);
@@ -188,8 +200,13 @@ function doPress() {
   S.lastPressAt = now;
   logSwitch(gap);
   if ($('#settings').classList.contains('on')) return;   // test view: no scanning
-  if (S.session && S.session.running) S.session.press();
-  else startScan();
+  if (S.session && S.session.running) { S.session.press(); return; }
+  if (S.paused) {
+    S.paused = false;
+    $('#ask-text').innerHTML = 'Is your letter in the <b class="teal">teal</b> group?';
+    $('#ask-keys').innerHTML = '<b>press</b> = yes &nbsp;·&nbsp; <b>wait</b> = no';
+  }
+  startScan();
 }
 
 addEventListener('keydown', e => {
@@ -322,7 +339,7 @@ function wire() {
   $('#cmp-run').onclick = () => runCompare(SAMPLE);
   $('#cmp-typed').onclick = () => runCompare(S.buf.map(u => u.id));
   $('#help-open').onclick = () => $('#help').classList.add('on');
-  $('#help-go').onclick = () => { $('#help').classList.remove('on'); seen(); startScan(); };
+  $('#help-go').onclick = () => { $('#help').classList.remove('on'); seen(); pause(); };
   $('#help-practice').onclick = () => { $('#help').classList.remove('on'); seen(); startPractice(); };
   $('#test-reset').onclick = () => { testN = 0; $('#test-lamp').innerHTML = ''; $('#test-out').textContent = 'no presses yet'; };
 
@@ -373,7 +390,7 @@ function restore() {
   paintText();
   if (firstRun()) $('#help').classList.add('on');
   else $('#help').classList.remove('on');
-  startScan();
+  pause();                      // idle until the first press; never type unprompted
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => { /* offline is a bonus */ });
   }

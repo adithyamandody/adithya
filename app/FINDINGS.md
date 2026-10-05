@@ -227,3 +227,64 @@ been.
 
 **All four findings rest on the hand-estimated model.** Phase 3 must re-run them on
 real corpora before anything is claimed in public.
+
+---
+
+# Finding 005 — the scanner typed by itself, and the press count is worse than the baseline
+
+**Date:** 5 October 2026 · reported from the live app · `app/test/session.test.mjs`
+
+## The bug
+
+A user left the app alone and three letters appeared: <span lang="ml">ഷങങ</span>. Reproduced
+exactly — walking the all-wait path with **zero presses** emitted
+<span lang="ml">ഷങങങങങ</span>.
+
+Mathematically this was correct Huffman scanning: every leaf has a codeword,
+including the all-"no" one. As a product it is indefensible. **Idle must not type.**
+
+### The fix, and the fix to the fix
+
+First attempt: refuse to emit on a zero-press path. The tests immediately caught
+the cost — the least-wait-reachable **letter of every context became untypeable**.
+A letter you cannot type is a worse defect than the one being fixed.
+
+Second attempt: give an explicit `ctl_pause` the smallest probability so Huffman
+buries it at the end of the all-wait path. **This does not work** — the all-`lo`
+spine does not track the least-likely leaf, and a real letter still landed there
+in all eight contexts.
+
+What works is placing it by construction (`graftPause` in `app/scan.js`): walk the
+all-wait path, split the leaf it reaches, put pause on the wait side and the
+original letter one press away. Verified: all eight contexts end on pause, **zero
+letters lost**, one extra step for one rare unit per context.
+
+## The second bug, which is not a bug but was being hidden
+
+| | scan steps | presses |
+|---|---|---|
+| A — row–column (ships today) | 115 | **22** |
+| B — AksharaScan | **50** | **25** |
+
+**B needs more presses than the baseline it replaces** — and presses are the
+expensive resource for someone with limited motor control. Fatigue is measured in
+presses, not seconds.
+
+Swapping which branch a press takes does **not** fix it: for any leaf,
+`presses_swapped = depth − presses`, so relabelling moves effort between symbols
+without reducing it. On this sentence it gives exactly 25 either way.
+
+This is intrinsic. **Binary tree scanning trades presses for time:** row–column is
+press-cheap and slow, a tree is press-expensive and fast. Two selections per
+character versus about half the tree depth.
+
+## What must change on the poster
+
+The headline cannot be "2.3× faster" unqualified. It has to be:
+
+> **2.3× fewer scan steps, at 14% more button presses.**
+
+Which user that helps is an empirical question the project should actually ask —
+and it argues for adding presses-per-message as a co-primary metric alongside
+steps, rather than a secondary one. For a user who fatigues, row–column may
+genuinely be the better system, and the project should be willing to say so.

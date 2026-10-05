@@ -360,6 +360,11 @@
   "class": "CTL"
  },
  {
+  "id": "ctl_pause",
+  "char": "⏸",
+  "class": "CTL"
+ },
+ {
   "id": "x_vir",
   "char": "്",
   "class": "VIR"
