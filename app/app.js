@@ -10,7 +10,7 @@
  */
 'use strict';
 
-import { ScanSession, simulate } from './scan.js';
+import { ScanSession, simulate, decompose } from './scan.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -104,10 +104,8 @@ function commit(unitId) {
   else if (u.id === 'ctl_clear') S.buf = [];
   else S.buf.push(u);
   S.idleRuns = 0;
-  if (S.practice && u.id === S.practice.id) {
-    S.practice = null;
-    $('#practice').innerHTML = '<span>✓ That is it — you typed it with one button.</span>';
-  }
+  const want = practiceTarget();
+  if (want && u.id === want.id) S.practice.i++;
   tick();
   paintText();
   paintStats();
@@ -140,27 +138,52 @@ requestAnimationFrame(paintTimer);
 
 /* ── guided practice ─────────────────────────────────────────────────────
    "I don't know how to work this" is answered best by being told, each step,
-   what the right move is — with a target you can actually aim at. */
-function startPractice() {
-  const pick = ['ka', 'na', 'ma', 'ta', 'v_a', 'pa', 'ya', 'ra'];
-  const id = pick[Math.floor(Math.random() * pick.length)];
-  S.practice = D.byId[id];
+   what the right move is. Works on a whole WORD, because the thing people
+   actually want to type first is their own name — and a name is where the
+   hard parts live: vowel signs and the virama that joins ത + യ into ത്യ. */
+function startPractice(word) {
+  const ids = word ? decompose(D, word) : null;
+  if (ids && ids.length) S.practice = { ids, i: 0, word };
+  else {
+    const pick = ['ka', 'na', 'ma', 'ta', 'v_a', 'pa', 'ya', 'ra'];
+    const id = pick[Math.floor(Math.random() * pick.length)];
+    S.practice = { ids: [id], i: 0, word: D.byId[id].char };
+  }
   S.buf = [];
+  S.idleRuns = 0;
   paintText();
   show('compose');
   startScan();
 }
 
+function practiceTarget() {
+  const p = S.practice;
+  return p && p.i < p.ids.length ? D.byId[p.ids[p.i]] : null;
+}
+
 function paintPractice(f) {
   const el = $('#practice');
-  if (!S.practice) { el.hidden = true; return; }
+  const p = S.practice;
+  if (!p) { el.hidden = true; return; }
   el.hidden = false;
-  const inGroup = f && f.mode === 'B' && f.hot.includes(S.practice.id);
+
+  if (p.i >= p.ids.length) {
+    el.innerHTML = `<span>✓ You typed <b class="t">${escapeHtml(p.word)}</b> `
+                 + 'with one button.</span>';
+    return;
+  }
+  const t = D.byId[p.ids[p.i]];
+  const done = p.ids.slice(0, p.i).map(id => D.byId[id].char).join('');
+  const inGroup = f && f.mode === 'B' && f.hot.includes(t.id);
+  const label = t.class === 'VIR' ? ' <small>(the join)</small>'
+              : t.class === 'S' ? ' <small>(vowel sign)</small>' : '';
   el.innerHTML =
-    `<span>Type this:</span><span class="t">${escapeHtml(S.practice.char)}</span>`
+    `<span>${escapeHtml(p.word)} &nbsp;·&nbsp; next:</span>`
+    + `<span class="t">${escapeHtml(t.class === 'S' || t.class === 'VIR'
+        ? DOTTED + t.char : t.char)}</span>${label}`
     + `<span class="verdict">${inGroup
-        ? '<span class="yes">It is in the teal group → PRESS</span>'
-        : '<span class="no">Not in the teal group → wait, do nothing</span>'}</span>`;
+        ? '<span class="yes">in the teal group → PRESS</span>'
+        : '<span class="no">not in the teal group → wait</span>'}</span>`;
 }
 
 function paintScan(f) {
@@ -188,11 +211,30 @@ function paintScan(f) {
   el.innerHTML = html;
 }
 
+/* Vowel signs and the virama are COMBINING marks: alone they render as an
+   invisible speck or a bare accent, so on a key they are unfindable. Reported
+   from the live app — a user could not type ത്യ because the ് joining the two
+   letters was not visible as a key.
+
+   Fix: put them on a dotted circle (U+25CC), which is what Unicode charts,
+   font viewers and every Indic keyboard do. ് becomes ◌്, ി becomes ◌ി. */
+const COMBINING = new Set(['S', 'VIR']);
+const DOTTED = '\u25CC';
+
 function chip(id, cls) {
   const u = D.byId[id];
   if (!u) return '';
   const ctl = u.class === 'CTL' ? ' ctl' : '';
-  const ch = u.id === 'p_sp' ? '␣' : u.char;
+  let ch = u.char;
+  if (u.id === 'p_sp') ch = '␣';
+  else if (COMBINING.has(u.class)) ch = DOTTED + u.char;
+
+  /* The virama is not a letter at all — it joins the next consonant to this
+     one to form a koottaksharam. Nobody guesses that from a floating mark. */
+  if (u.id === 'x_vir')
+    return `<div class="u ${cls} join" title="joins this letter to the next">`
+         + `${escapeHtml(ch)}<small>join</small></div>`;
+
   if (u.id === 'ctl_pause')
     return `<div class="u ${cls} ctl pause" title="wait here to pause">`
          + `${escapeHtml(ch)}<small>pause</small></div>`;
@@ -392,7 +434,8 @@ function wire() {
   $('#clr').onclick = clearAll;
   $('#help-open').onclick = () => $('#help').classList.add('on');
   $('#help-go').onclick = () => { $('#help').classList.remove('on'); seen(); pause(); };
-  $('#help-practice').onclick = () => { $('#help').classList.remove('on'); seen(); startPractice(); };
+  $('#help-practice').onclick = () => { $('#help').classList.remove('on'); seen(); startPractice($('#word').value.trim()); };
+  $('#guide').onclick = () => startPractice($('#word').value.trim());
   $('#test-reset').onclick = () => { testN = 0; $('#test-lamp').innerHTML = ''; $('#test-out').textContent = 'no presses yet'; };
 
   $('#set-period').onchange = e => setSpeed(+e.target.value);

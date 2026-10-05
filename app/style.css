@@ -232,3 +232,10 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--hot)}
   border-radius:8px;padding:8px 6px;
 }
 #test-lamp i.bk{background:#f0a0a0;border-color:#f0a0a0}
+.u.join{flex-direction:column;gap:0;min-width:58px}
+.u.join small{font-size:9px;letter-spacing:.06em;text-transform:uppercase;opacity:.7}
+#word{
+  font-size:19px;padding:6px 10px;width:116px;background:#1c2430;
+  color:var(--ink);border:1px solid var(--line);border-radius:8px;
+}
+#practice small{font-size:11px;color:var(--dim);margin-left:-6px}
