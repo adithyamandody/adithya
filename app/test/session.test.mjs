@@ -31,14 +31,14 @@ const ok = (c, m) => { if (!c) throw new Error(m); };
 
 /** Drive a session to completion. `wants` decides whether to press on each
  *  frame. Returns what was emitted plus the counters. */
-function drive({ mode, ctx = 'SP', wants, period = 800, maxFrames = 400 }) {
+function drive({ mode, ctx = 'SP', wants, period = 800, maxFrames = 400, extra, only }) {
   let clock = 0;
   const queue = [];
   let emitted = null, idled = false;
   const frames = [];
 
   const s = new ScanSession({
-    mode, period, data: D,
+    mode, period, data: D, extra, only,
     context: () => ctx,
     onFrame: f => frames.push(f),
     onEmit: id => { emitted = id; },
@@ -216,6 +216,41 @@ t('stop() halts the machine', () => {
   clock += 10000;
   while (queue.length) queue.shift()();
   eq(s.steps, at, 'steps advanced after stop');
+});
+
+/* A switch user has no finger to tap the 123 button with. Every mode switch
+   must be reachable BY SCANNING, from wherever they happen to be — including
+   part-way through a word, which was a trap before. */
+console.log('\nthe number layer, reached by switch alone');
+
+t('the 123 key is reachable from every context, including mid-word', () => {
+  for (const ctx of Object.keys(D.legal)) {
+    const r = drive({ mode: 'B', ctx, wants: f => f.hot.includes('ctl_123'),
+                      extra: { ctl_123: 0.05 } });
+    eq(r.emitted, 'ctl_123', `${ctx}:`);
+    ok(r.steps <= 7, `${ctx} took ${r.steps} steps to reach numbers`);
+  }
+});
+
+t('escaping the layer is cheaper than anything inside it', () => {
+  const digits = D.units.filter(u => u.class === 'NUM').map(u => u.id);
+  const only = [...digits, 'p_sp', 'ctl_undo', 'ctl_abc'];
+  const r = drive({ mode: 'B', ctx: 'NUM', only, extra: { ctl_abc: 0.30 },
+                    wants: f => f.hot.includes('ctl_abc') });
+  eq(r.emitted, 'ctl_abc');
+  const tree = treeFor(D, 'NUM', { ctl_abc: 0.30 }, only);
+  const worst = Math.max(...digits.map(d => codeOf(tree, d)?.steps ?? 0));
+  ok(r.steps < worst,
+     `exit ${r.steps} steps vs worst digit ${worst} — a mode you cannot leave`);
+});
+
+t('every digit is reachable inside the layer', () => {
+  const digits = D.units.filter(u => u.class === 'NUM').map(u => u.id);
+  const only = [...digits, 'p_sp', 'ctl_undo', 'ctl_abc'];
+  for (const d of digits) {
+    const r = drive({ mode: 'B', ctx: 'NUM', only, wants: f => f.hot.includes(d) });
+    eq(r.emitted, d, `digit ${d}:`);
+  }
 });
 
 console.log('\nmode A — row–column baseline');

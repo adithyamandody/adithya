@@ -145,6 +145,14 @@ function commit(unitId) {
   if (u.id === 'ctl_pause') { maybePause(); return; }
   if (u.id === 'ctl_123') { setNumMode(true); return; }
   if (u.id === 'ctl_abc') { setNumMode(false); return; }
+  /* A space ends a number. Returning to letters unasked saves the user from
+     having to find the exit at all in the common case. */
+  if (S.numMode && u.class === 'SP') {
+    S.buf.push(u);
+    paintText(); paintStats();
+    setNumMode(false);
+    return;
+  }
   if (u.id === 'ctl_undo') S.buf.pop();
   else if (u.id === 'ctl_clear') S.buf = [];
   else {
@@ -653,43 +661,56 @@ function lastWord() {
 
 /** Everything the tree should offer beyond letters: {unitId: weight}. */
 function candidates() {
-  if (!S.predict) return null;
   const out = {};
+
+  /* In the number layer the only thing that matters is getting out again, so
+     give the exit a large share and let the digits share the rest. */
+  if (S.numMode) return { ctl_abc: ABC_KEY_MASS };
+
+  /* The 123 key is offered in EVERY context. Restricting it to word boundaries
+     meant a user part-way through a word could not reach numbers at all
+     without backspacing out — a trap, and one only reachable by a switch user
+     since there is no finger to tap the button with. */
+  out.ctl_123 = NUM_KEY_MASS;
+
+  if (!S.predict) return out;
 
   // start of an utterance: offer phrases, and nothing is half-typed
   if (!S.buf.length) {
-    out['ctl_123'] = NUM_KEY_MASS;
     const ph = phrases().slice(0, 8);
     if (ph.length) {
       const each = PHRASE_MASS / ph.length;
       for (const p of ph) out[`p:${p}`] = each;
     }
-    return Object.keys(out).length ? out : null;
+    return out;
   }
 
   const pre = partial();
 
   // just finished a word: offer what usually follows it
   if (!pre) {
-    out['ctl_123'] = NUM_KEY_MASS;
     const nx = nextWords(lastWord()).slice(0, MAX_CANDIDATES);
     if (nx.length) {
       const each = WORD_MASS / nx.length;
       for (const w of nx) out[`w:${w}`] = each;
     }
-    return Object.keys(out).length ? out : null;
+    return out;
   }
 
   // mid-word: complete it
   const hits = lexicon().filter(w => w.startsWith(pre) && w !== pre).slice(0, MAX_CANDIDATES);
-  if (!hits.length) return null;
-  const each = WORD_MASS / hits.length;
-  for (const w of hits) out[`w:${w}`] = each;
+  if (hits.length) {
+    const each = WORD_MASS / hits.length;
+    for (const w of hits) out[`w:${w}`] = each;
+  }
   return out;
 }
 
-/* Reaching the number layer must itself be cheap, or the layer solves nothing. */
+/* Reaching the number layer must itself be cheap, or the layer solves nothing.
+   And LEAVING it must be cheaper still: escaping a mode you entered by accident
+   is the most urgent thing a switch user can want to do. */
 const NUM_KEY_MASS = 0.05;
+const ABC_KEY_MASS = 0.30;
 
 function setSpeed(ms) {
   S.period = ms;
