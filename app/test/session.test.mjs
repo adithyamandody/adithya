@@ -223,6 +223,36 @@ t('stop() halts the machine', () => {
    part-way through a word, which was a trap before. */
 console.log('\nthe number layer, reached by switch alone');
 
+/* A layer only IS a layer if its contents are not also in the main alphabet.
+   The corpus is Malayalam Wikipedia, full of inline English and digits, so the
+   learned legal sets contain both — and the base alphabet shipped at 100 keys
+   with B, n, P and 9 among the Malayalam until a browser test caught it.
+   Every Malayalam letter was paying for symbols that have their own layer. */
+t('the default layer contains no digits and no Latin letters', () => {
+  const byId = Object.fromEntries(D.units.map(u => [u.id, u]));
+  const layered = new Set(['NUM', 'LAT']);
+  for (const ctx of Object.keys(D.legal)) {
+    const only = D.legal[ctx].filter(id => !layered.has((byId[id] || {}).class));
+    const got = leaves(treeFor(D, ctx, { ctl_123: 0.05, ctl_eng: 0.04 }, only));
+    const leaked = got.filter(id => layered.has((byId[id] || {}).class));
+    eq(leaked.length, 0, `${ctx} leaked ${leaked.slice(0, 4).join(',')}`);
+  }
+});
+
+/* And filtering the default layer must not quietly discard legality — the one
+   mechanism this whole project is about. */
+t('filtering the default layer keeps the legality constraint intact', () => {
+  const byId = Object.fromEntries(D.units.map(u => [u.id, u]));
+  const layered = new Set(['NUM', 'LAT']);
+  for (const ctx of Object.keys(D.legal)) {
+    const only = D.legal[ctx].filter(id => !layered.has((byId[id] || {}).class));
+    const got = leaves(treeFor(D, ctx, null, only))
+      .filter(id => !id.startsWith('ctl_'));
+    for (const id of got)
+      ok(D.legal[ctx].includes(id), `${ctx} offered illegal ${id}`);
+  }
+});
+
 t('both layer keys are reachable from every context, including mid-word', () => {
   for (const key of ['ctl_123', 'ctl_eng']) {
     for (const ctx of Object.keys(D.legal)) {

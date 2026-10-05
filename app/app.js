@@ -72,7 +72,7 @@ function startScan() {
     data: D,
     context,
     extra: candidates(),
-    only: layerUnits(S.layer),
+    only: layerUnits(S.layer, context()),
     onFrame: paintScan,
     onEmit: commit,
     onIdle: maybePause,
@@ -688,13 +688,28 @@ const LAYERS = {
   num: { cls: 'NUM', key: 'ctl_123', label: '123  numbers' },
   eng: { cls: 'LAT', key: 'ctl_eng', label: 'ABC  english' },
 };
+const LAYERED = new Set(Object.values(LAYERS).map(l => l.cls));
 
-function layerUnits(name) {
+function layerUnits(name, ctx) {
   const spec = LAYERS[name];
-  if (!spec) return null;
-  const members = D.units.filter(u => u.class === spec.cls).map(u => u.id);
-  if (!members.length) return null;
-  return [...members, 'p_sp', 'ctl_undo', 'ctl_ml'];
+  if (spec) {
+    /* An explicit layer is an exact set: every member reachable, however rare
+       in the corpus. The user chose this mode, so "F is uncommon" is no reason
+       to make F untypeable. */
+    const members = D.units.filter(u => u.class === spec.cls).map(u => u.id);
+    return members.length ? [...members, 'p_sp', 'ctl_undo', 'ctl_ml'] : null;
+  }
+
+  /* The DEFAULT layer must be restricted too, and this is easy to miss. The
+     corpus is Malayalam Wikipedia, which is full of inline English and digits,
+     so the learned legal sets contain them — and the base alphabet arrived at
+     100 keys instead of ~47, with B, n, P and 9 sitting among the Malayalam.
+     Every Malayalam letter paid for symbols that have their own layer.
+     A layer is only a layer if its contents are NOT also in the main set. */
+  /* The default layer is a FILTER on what is legal here, not a replacement —
+     dropping legality would discard the one mechanism the project is about. */
+  const legal = D.legal[ctx] || D.legal.SP;
+  return legal.filter(id => !LAYERED.has((D.byId[id] || {}).class));
 }
 const WORD_MASS = 0.34;        // share of probability words take from letters
 

@@ -50,9 +50,12 @@ export function graftPause(root, pauseId = 'ctl_pause') {
  * A dedicated layer is the same answer every phone keyboard reaches with its
  * "123" key, and it makes the cost predictable instead of a hunt. */
 export function treeFor(D, ctx, extra, only) {
-  const allowed = only && only.length
-    ? only
-    : (D.legal[ctx] || D.legal.SP);
+  /* `only` is the EXACT set to offer. The caller decides what belongs there:
+     for an explicit layer it is every member, reachable however rare, because
+     the user chose that mode deliberately; for the default layer it is the
+     legal set with the layered classes filtered out. Those are different
+     operations and treeFor should not try to guess which one it was handed. */
+  const allowed = (only && only.length) ? only : (D.legal[ctx] || D.legal.SP);
   const row = D.bigrams[ctx] || D.bigrams.SP;
   const probs = {};
   let z = 0;
