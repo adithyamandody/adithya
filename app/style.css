@@ -261,3 +261,13 @@ textarea{
 }
 .u.layer small{font-size:9px;letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-weight:400}
 #numkey.on{background:var(--hot-dim);border-color:var(--hot);color:var(--ink)}
+
+/* confirmation for a gesture that has no visible key */
+#flash{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(14px);
+  background:var(--hot);color:#07100f;font-weight:600;font-size:15px;
+  padding:11px 20px;border-radius:99px;opacity:0;pointer-events:none;
+  transition:opacity .18s,transform .18s;z-index:40;max-width:90vw;text-align:center;
+}
+#flash.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion:reduce){#flash{transition:none}}

@@ -40,6 +40,30 @@ Two switches, one ESP32, paired as a Bluetooth HID keyboard
 | 1 | 4 | `SPACE` | **Select** — "yes, my letter is in this group" |
 | 2 | 5 | `BACKSPACE` | **Undo** — delete the last unit |
 
+### A third command from two switches
+
+| Gesture | Does |
+|---|---|
+| Tap switch 2 | Delete the last unit |
+| **Hold switch 2** (0.9 s) | The configured action |
+| **Both switches together** | The same action |
+
+The action is set in Settings: speak it aloud, write it on the plotter, both, or
+nothing.
+
+Two routes to the same command, on purpose. Pressing two switches at once is
+genuinely hard with impaired motor control, so the hold must work alone; and some
+people find a sustained hold harder than a quick chord, so that works too.
+
+The firmware sends `press()`/`release()` rather than a one-shot keystroke —
+without real key state the tablet cannot tell a tap from a hold, or see both
+switches down at once.
+
+**Select fires on key down and is never delayed**, because the scan rhythm
+depends on it and waiting to see whether a press becomes a hold would add latency
+to every selection. Backspace fires on key *up*, which is what makes the hold
+detectable at all.
+
 Wiring per switch: one leg to the GPIO pin, the other to GND. No resistors —
 `INPUT_PULLUP` handles that. Use 3.5 mm mono jacks (the AAC standard) so a user
 can plug in their own switch: tip to GPIO, sleeve to GND.

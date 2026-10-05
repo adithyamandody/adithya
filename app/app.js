@@ -29,6 +29,7 @@ const S = {
   practice: null,   // {ids, i, word} the guide's target
   predict: true,    // word prediction (BUILD.md C5)
   numMode: false,   // the digits-only layer
+  action: 'speak',  // what a hold / chord does
 };
 
 /* ══════════════════════════ data ══════════════════════════ */
@@ -343,19 +344,87 @@ function doPress() {
  * Both arrive as ordinary key events because the ESP32 pairs as a Bluetooth
  * HID keyboard, so nothing here is specific to our hardware — any commercial
  * switch interface that emits these keys works too. */
-addEventListener('keydown', e => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+/* ── a third command from two switches ───────────────────────────────────
+ * Holding switch 2, or holding both at once, fires a configurable action —
+ * speak it, write it on the plotter, or both.
+ *
+ * Two routes on purpose. Pressing two switches simultaneously is genuinely
+ * hard with impaired motor control, so a long hold on one switch must work on
+ * its own; and some users find a hold harder than a chord, so both exist.
+ *
+ * Select fires on key DOWN and must never be delayed — the scan rhythm depends
+ * on it, and waiting to see whether a press becomes a hold would add latency to
+ * every single selection. Backspace has no such constraint, so it fires on key
+ * UP, which is what makes a long hold detectable at all.
+ */
+const HOLD_MS = 900;
+const down = { space: 0, bksp: 0 };
+let holdTimer = null, chordFired = false;
 
-  if (e.code === 'Space' || e.key === ' ' || e.key === 'Enter') {
+function isSelect(e) { return e.code === 'Space' || e.key === ' ' || e.key === 'Enter'; }
+function isBksp(e) { return e.key === 'Backspace' || e.key === 'Delete'; }
+
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT'
+      || e.target.tagName === 'TEXTAREA') return;
+
+  if (isSelect(e)) {
     e.preventDefault();
-    doPress();
+    if (e.repeat) return;
+    down.space = performance.now();
+    if (down.bksp) { fireChord(); return; }     // both held: chord
+    doPress();                                   // never delayed
     return;
   }
-  if (e.key === 'Backspace' || e.key === 'Delete') {
-    e.preventDefault();              // or the browser navigates back
-    doBackspace();
+
+  if (isBksp(e)) {
+    e.preventDefault();                          // or the browser navigates back
+    if (e.repeat) return;
+    down.bksp = performance.now();
+    if (down.space) { fireChord(); return; }
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(() => { chordFired = true; fireAction('hold'); }, HOLD_MS);
   }
 });
+
+addEventListener('keyup', e => {
+  if (isSelect(e)) { down.space = 0; return; }
+  if (isBksp(e)) {
+    const held = performance.now() - down.bksp;
+    down.bksp = 0;
+    clearTimeout(holdTimer);
+    if (chordFired) { chordFired = false; return; }   // the hold already acted
+    if (held < HOLD_MS) doBackspace();                // a tap: delete one unit
+  }
+});
+
+function fireChord() {
+  clearTimeout(holdTimer);
+  chordFired = true;
+  fireAction('both switches');
+}
+
+/* What the gesture does is the user's choice, because the right answer differs
+   per person and per device: speech if they have a voice, the plotter if they
+   need something on paper, both if they are being understood by someone across
+   a room AND signing a form. */
+function fireAction(how) {
+  const act = S.action || 'speak';
+  if (!S.buf.length) { flash(`${how}: nothing to send yet`); return; }
+  if (act === 'none') { flash(`${how}: no action set`); return; }
+  if (act === 'speak' || act === 'both') speak();
+  if (act === 'write' || act === 'both') write();
+  flash(`${how} → ${act === 'both' ? 'spoken and written' : act === 'write' ? 'sent to the plotter' : 'spoken'}`);
+}
+
+function flash(msg) {
+  const el = $('#flash');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(flash.t);
+  flash.t = setTimeout(() => el.classList.remove('on'), 2200);
+}
 addEventListener('pointerdown', e => {
   if (!S.tap) return;
   if (e.target.closest('button,select,input,nav')) return;
@@ -525,6 +594,7 @@ function wire() {
   $('#set-mode').onchange = e => { S.mode = e.target.value; save(); startScan(); };
   $('#set-audio').onchange = e => { S.audio = e.target.checked; save(); };
   $('#set-tap').onchange = e => { S.tap = e.target.checked; save(); };
+  $('#set-action').onchange = e => { S.action = e.target.value; save(); };
   $('#set-predict').onchange = e => { S.predict = e.target.checked; save(); startScan(); };
   $('#forget').onclick = () => {
     try { localStorage.removeItem('aksharascan-words'); } catch (_) {}
@@ -748,7 +818,7 @@ function save() {
   try {
     localStorage.setItem('aksharascan', JSON.stringify(
       { mode: S.mode, period: S.period, audio: S.audio, tap: S.tap,
-        predict: S.predict, server: S.server }));
+        predict: S.predict, action: S.action, server: S.server }));
   } catch (_) { /* private mode — settings just will not persist */ }
 }
 
@@ -762,6 +832,7 @@ function restore() {
   $('#set-audio').checked = S.audio;
   $('#set-tap').checked = S.tap;
   $('#set-predict').checked = S.predict !== false;
+  $('#set-action').value = S.action || 'speak';
   $('#set-server').value = S.server || '';
 }
 

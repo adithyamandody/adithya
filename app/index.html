@@ -40,6 +40,8 @@
 </header>
 
 <!-- ───────────────────────── compose ───────────────────────── -->
+<div id="flash"></div>
+
 <section id="compose" class="view on">
   <div id="practice" hidden></div>
   <div id="text" class="ml" aria-live="polite"><span class="hint">Press <kbd>space</kbd>, tap, or use the switch</span></div>
@@ -151,6 +153,18 @@
   <label>Plotter server
     <input id="set-server" type="text" placeholder="http://192.168.1.5:5000" inputmode="url">
   </label>
+
+  <label>Hold switch 2, or press both switches
+    <select id="set-action">
+      <option value="speak" selected>Speak it aloud</option>
+      <option value="write">Write it on the plotter</option>
+      <option value="both">Speak it and write it</option>
+      <option value="none">Do nothing</option>
+    </select>
+  </label>
+  <p class="muted">Two switches give a third command. A long hold works on its own,
+     because pressing two switches at once is hard with impaired motor control —
+     and a chord works too, because some people find that easier than holding.</p>
 
   <h3>Quick phrases</h3>
   <p class="muted">Offered at the start of every utterance, one or two presses deep,

@@ -9,6 +9,10 @@
  * app, and the switches work in every other app on the tablet. This is how real
  * AAC switch interfaces (Blue2, Hook+) behave.
  *
+ * Holding switch 2, or pressing both together, fires a configurable action in
+ * the app (speak, write on the plotter, or both). That needs real key state, so
+ * this sketch sends press/release rather than a one-shot keystroke.
+ *
  * Wiring, per switch: one leg to the GPIO pin, the other to GND. No resistors —
  * INPUT_PULLUP provides them. 3.5 mm mono jacks are the AAC standard, so a user
  * can plug in their own switch: tip to GPIO, sleeve to GND.
@@ -53,10 +57,16 @@ void loop() {
     if (now != SW[i].last && millis() - SW[i].tLast > DEBOUNCE) {
       SW[i].tLast = millis();
       SW[i].last  = now;
-      if (now == LOW) {                     // pressed (pull-up: LOW = closed)
-        if (ble.isConnected()) ble.write(SW[i].key);
-        Serial.println(SW[i].name);
+      /* press() / release() rather than write(). write() sends a keystroke
+         and lets go immediately, so the tablet can never tell a tap from a
+         hold, and can never see both switches down at once. Holding and
+         chording are the only way to get a third command out of two switches,
+         so the firmware has to expose the button's actual state. */
+      if (ble.isConnected()) {
+        if (now == LOW) ble.press(SW[i].key);
+        else            ble.release(SW[i].key);
       }
+      Serial.printf("%s %s\n", SW[i].name, now == LOW ? "down" : "up");
     }
   }
 }
