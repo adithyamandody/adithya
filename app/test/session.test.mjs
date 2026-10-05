@@ -161,15 +161,19 @@ t('undo and clear stay reachable from every context', () => {
   }
 });
 
-/* A space cannot follow a space, so p_sp is absent from the SP tree. That is
-   the model working, not a bug — but it is worth pinning down, because it also
-   means punctuation cannot directly follow a space. Natural order (word, then
-   full stop, then space) is unaffected. */
-t('a space cannot follow a space — illegal by design, and enforced', () => {
-  ok(!D.legal.SP.includes('p_sp'), 'SP→SP should be illegal');
-  const r = drive({ mode: 'B', ctx: 'SP', wants: f => f.hot.includes('p_sp') });
-  ok(r.emitted !== 'p_sp', 'emitted a space after a space');
-  ok(D.legal.C.includes('p_sp'), 'but a space MUST be typable after a consonant');
+/* The real structural rule at a word boundary: a DEPENDENT mark has nothing to
+   attach to, so none may open a word.
+
+   This replaces an earlier assertion that SP→SP is illegal. That was an
+   artifact of the class scheme, not a fact about Malayalam: SP lumps space and
+   punctuation together, so "space after space" is really "space after a full
+   stop", which is perfectly ordinary. Measured data said so immediately. */
+t('no dependent mark may follow a space — nothing to attach to', () => {
+  const cls = Object.fromEntries(D.units.map(u => [u.id, u.class]));
+  for (const id of D.legal.SP)
+    ok(!['S', 'VIR', 'ANU', 'CH'].includes(cls[id]),
+       `SP→${cls[id]} (${id}) should be illegal`);
+  ok(D.legal.C.includes('p_sp'), 'a space must be typable after a consonant');
 });
 
 t('LIVE counters equal OFFLINE codeOf() — the invariant that matters', () => {

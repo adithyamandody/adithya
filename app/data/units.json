@@ -1,5 +1,40 @@
 [
  {
+  "id": "p_sp",
+  "char": " ",
+  "class": "SP"
+ },
+ {
+  "id": "u0021",
+  "char": "!",
+  "class": "SP"
+ },
+ {
+  "id": "p_com",
+  "char": ",",
+  "class": "SP"
+ },
+ {
+  "id": "p_dot",
+  "char": ".",
+  "class": "SP"
+ },
+ {
+  "id": "p_q",
+  "char": "?",
+  "class": "SP"
+ },
+ {
+  "id": "x_anu",
+  "char": "ം",
+  "class": "ANU"
+ },
+ {
+  "id": "x_vis",
+  "char": "ഃ",
+  "class": "ANU"
+ },
+ {
   "id": "v_a",
   "char": "അ",
   "class": "V"
@@ -200,8 +235,23 @@
   "class": "C"
  },
  {
+  "id": "rra",
+  "char": "റ",
+  "class": "C"
+ },
+ {
   "id": "la",
   "char": "ല",
+  "class": "C"
+ },
+ {
+  "id": "lla",
+  "char": "ള",
+  "class": "C"
+ },
+ {
+  "id": "zha",
+  "char": "ഴ",
   "class": "C"
  },
  {
@@ -227,21 +277,6 @@
  {
   "id": "ha",
   "char": "ഹ",
-  "class": "C"
- },
- {
-  "id": "lla",
-  "char": "ള",
-  "class": "C"
- },
- {
-  "id": "zha",
-  "char": "ഴ",
-  "class": "C"
- },
- {
-  "id": "rra",
-  "char": "റ",
   "class": "C"
  },
  {
@@ -300,6 +335,16 @@
   "class": "S"
  },
  {
+  "id": "u0D4C",
+  "char": "ൌ",
+  "class": "S"
+ },
+ {
+  "id": "x_vir",
+  "char": "്",
+  "class": "VIR"
+ },
+ {
   "id": "s_au",
   "char": "ൗ",
   "class": "S"
@@ -330,26 +375,6 @@
   "class": "CH"
  },
  {
-  "id": "p_sp",
-  "char": " ",
-  "class": "SP"
- },
- {
-  "id": "p_dot",
-  "char": ".",
-  "class": "SP"
- },
- {
-  "id": "p_com",
-  "char": ",",
-  "class": "SP"
- },
- {
-  "id": "p_q",
-  "char": "?",
-  "class": "SP"
- },
- {
   "id": "ctl_undo",
   "char": "⌫",
   "class": "CTL"
@@ -363,20 +388,5 @@
   "id": "ctl_pause",
   "char": "⏸",
   "class": "CTL"
- },
- {
-  "id": "x_vir",
-  "char": "്",
-  "class": "VIR"
- },
- {
-  "id": "x_anu",
-  "char": "ം",
-  "class": "ANU"
- },
- {
-  "id": "x_vis",
-  "char": "ഃ",
-  "class": "ANU"
  }
 ]

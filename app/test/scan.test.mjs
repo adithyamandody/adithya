@@ -31,9 +31,9 @@ const eq = (a, b, m = '') => {
 const ok = (c, m) => { if (!c) throw new Error(m); };
 
 console.log('\ndata');
-t('76 units (75 typeable + pause), 8 contexts', () => {
-  eq(D.units.length, 76);
-  eq(Object.keys(D.legal).length, 8);
+t('inventory is sane and pause is never offered as a letter', () => {
+  ok(D.units.length > 40, `only ${D.units.length} units`);
+  ok(Object.keys(D.legal).length >= 6, 'too few contexts');
   /* ctl_pause is not typeable: it is grafted onto the all-wait path at runtime
      so that doing nothing pauses instead of typing. It must never appear in a
      legality set, or it becomes a selectable character. */
@@ -60,10 +60,14 @@ console.log('\nlegality — this is the contribution, so it gets the most tests'
 t('a vowel sign cannot follow a vowel sign', () => {
   ok(!D.legal.S.includes('s_aa'), 'S→S should be illegal');
 });
-t('only consonants (plus space/control) may follow a virama', () => {
+/* A virama joins to a consonant, OR to a chillu when transliterating foreign
+   names — ഗെയ്ൽ, "Gail", occurs in the corpus. The hand-written rule said
+   chillu was impossible there; the measured data disagreed and the data was
+   right. What must never follow a virama is a vowel sign or another virama. */
+t('no vowel sign or second virama may follow a virama', () => {
   const cls = Object.fromEntries(D.units.map(u => [u.id, u.class]));
   for (const id of D.legal.VIR)
-    ok(['C', 'SP', 'CTL'].includes(cls[id]), `VIR→${cls[id]} should be illegal`);
+    ok(!['S', 'VIR', 'V'].includes(cls[id]), `VIR→${cls[id]} should be illegal`);
 });
 t('an independent vowel cannot follow a consonant', () => {
   const cls = Object.fromEntries(D.units.map(u => [u.id, u.class]));
@@ -181,9 +185,18 @@ t('B beats A on scan steps', () => {
   const a = simulate(D, SAMPLE, 'A'), b = simulate(D, SAMPLE, 'B');
   ok(b.steps < a.steps, `A=${a.steps} B=${b.steps}`);
 });
-t('B beats the unconstrained control — the actual research claim', () => {
+/* This began as "C4 beats C3b" — the project's hypothesis. Findings 001-007
+   disproved it on hand-estimated AND measured data, at legal-set sizes from
+   32% to 63%. The test now pins the established result instead of the hope:
+   the hard constraint is within noise of the soft model, in either direction.
+   If a future model ever moves this by more than 5%, that is a real discovery
+   and this test should fail loudly so nobody misses it. */
+t('the hard constraint stays within noise of the soft model (findings 001-007)', () => {
   const c = simulate(D, SAMPLE, 'C3b'), b = simulate(D, SAMPLE, 'B');
-  ok(b.steps <= c.steps, `C3b=${c.steps} B=${b.steps}`);
+  const delta = 100 * (c.steps - b.steps) / c.steps;
+  ok(Math.abs(delta) < 5,
+     `constraint moved steps by ${delta.toFixed(1)}% (C3b=${c.steps} B=${b.steps}) `
+     + '— if real, this overturns findings 001-007');
 });
 t('counting is deterministic', () => {
   eq(JSON.stringify(simulate(D, SAMPLE, 'B')),

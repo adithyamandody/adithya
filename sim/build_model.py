@@ -66,19 +66,39 @@ def class_of(ch):
     return None
 
 
+# A dependent mark cannot begin a word. A token that starts with one is a
+# fragment -- markup or a line break split it -- not Malayalam.
+DEPENDENT = {"S", "VIR", "ANU", "CH"}
+
+
 def units_of(text):
     """Text -> (unit char, class) stream. Unknown characters are dropped and
-    counted, so a corpus in the wrong script is obvious rather than silent."""
-    out, dropped = [], Counter()
-    for ch in unicodedata.normalize("NFC", text):
-        if ord(ch) in SKIP:
+    counted, so a corpus in the wrong script is obvious rather than silent.
+
+    Fragment tokens are dropped too, and this matters more than it sounds. In
+    Malayalam Wikipedia, SP->CH appears 57 times from split tokens while the
+    one genuinely rare transition it resembles, VIR->CH (as in ഗെയ്ൽ, "Gail"),
+    appears 3 times. Noise outnumbers signal 19:1, so a frequency floor cannot
+    tell them apart -- only a structural rule can."""
+    out, dropped, fragments = [], Counter(), 0
+    for token in unicodedata.normalize("NFC", text).split():
+        units = []
+        for ch in token:
+            if ord(ch) in SKIP:
+                continue
+            cls = class_of(ch)
+            if cls is None:
+                dropped[ch] += 1
+                continue
+            units.append((ch, cls))
+        if not units:
             continue
-        cls = class_of(ch)
-        if cls is None:
-            dropped[ch] += 1
+        if units[0][1] in DEPENDENT:        # a fragment, not a word
+            fragments += 1
             continue
-        out.append((" " if cls == "SP" else ch, cls))
-    return out, dropped
+        out.extend(units)
+        out.append((" ", "SP"))
+    return out, dropped, fragments
 
 
 def main():
@@ -95,7 +115,7 @@ def main():
     raw = sys.stdin.read() if args.corpus == "-" \
         else pathlib.Path(args.corpus).read_text(encoding="utf-8")
 
-    stream, dropped = units_of(raw)
+    stream, dropped, fragments = units_of(raw)
     if len(stream) < 1000:
         sys.exit(f"corpus too small: {len(stream)} units. "
                  "Numbers from this would be noise, not measurement.")
@@ -117,9 +137,21 @@ def main():
             words[w] += 1
 
     # ── inventory ──────────────────────────────────────────────────────────
+    # Reuse the readable ids from export_data.py (ka, v_aa, s_i, x_vir ...) so
+    # the two models are interchangeable and the tests, which name units, keep
+    # working. Anything the hand model does not cover falls back to codepoint.
     ids, chars = {}, {}
+    known = {}
+    try:
+        sys.path.insert(0, str(pathlib.Path(__file__).parent))
+        import export_data as ed
+        known = {ch: uid for uid, ch in
+                 [(u["id"], u["char"]) for u in ed.UNITS]}
+    except Exception as e:                       # standalone use is still fine
+        print(f"note: readable ids unavailable ({e}); using codepoint ids")
+
     for u in sorted(uni):
-        uid = "p_sp" if u == " " else f"u{ord(u):04X}"
+        uid = "p_sp" if u == " " else known.get(u) or f"u{ord(u):04X}"
         ids[u] = uid
         chars[uid] = u
     units = [{"id": ids[u], "char": u, "class": cls_of[u]} for u in sorted(uni)]
@@ -167,6 +199,7 @@ def main():
             "distinct_units": len(uni),
             "words_counted": sum(words.values()),
             "min_count": args.min_count,
+            "fragments_dropped": fragments,
             "contexts": sorted(legal),
         },
     }
@@ -197,6 +230,11 @@ def main():
               f"Legal sets are probably tight because transitions were unseen,")
         print(f"  not because they are impossible. Want roughly "
               f"{expected * 20:,}+ units before trusting legality.")
+        print()
+
+    if fragments:
+        print(f"dropped {fragments:,} fragment tokens beginning with a dependent "
+              f"mark (split by markup, not real words)")
         print()
 
     if dropped:

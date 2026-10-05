@@ -1,16 +1,20 @@
 {
- "source": "hand-estimated (sim/export_data.py)",
- "provisional": true,
- "note": "Replace with corpus-measured values before reporting any number. See BUILD.md phase 3.",
- "units": 76,
+ "source": "measured from sim/corpus_ml.txt",
+ "provisional": false,
+ "built": "2026-10-05",
+ "units_counted": 104886,
+ "distinct_units": 75,
+ "words_counted": 9939,
+ "min_count": 3,
+ "fragments_dropped": 59,
  "contexts": [
-  "SP",
-  "C",
-  "S",
-  "VIR",
-  "V",
   "ANU",
+  "C",
   "CH",
-  "CTL"
+  "CTL",
+  "S",
+  "SP",
+  "V",
+  "VIR"
  ]
 }

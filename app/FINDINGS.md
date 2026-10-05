@@ -398,3 +398,57 @@ Two safeguards, because both failure modes are silent:
 
 The sample run above is far below that threshold and is a pipeline test, not a
 measurement. The real run needs a real corpus.
+
+---
+
+# Finding 008 — real data corrected three of my hand-written rules
+
+**Date:** 5 October 2026 · 104,886 units of Malayalam Wikipedia · `sim/build_model.py`
+
+The model is now measured, not authored. Running the test suite against it
+failed three assertions, and in every case **the data was right and the rule was
+wrong**.
+
+| My rule | Measured | Verdict |
+|---|---|---|
+| no vowel sign after a virama | 0 occurrences | **confirmed** |
+| no vowel sign after a vowel sign | 0 | **confirmed** |
+| no independent vowel after a consonant | 0 | **confirmed** |
+| no chillu after a virama | **3** — <span lang="ml">ഗെയ്ൽ</span> ("Gail") | **wrong.** Real orthography for transliterating foreign names |
+| no space after a space | common | **wrong.** An artifact of my class scheme: SP lumps space with punctuation, so this is really "space after a full stop" |
+
+## The noise problem, which a frequency floor cannot solve
+
+`SP → CH` appeared **57 times**, which looks decisively legal. It is entirely
+corpus noise: Wikipedia markup splitting words, leaving an orphan chillu after a
+space. Meanwhile the one genuinely rare transition it resembles, `VIR → CH`,
+appears **3 times**.
+
+**Noise outbids signal 19 to 1.** No frequency threshold separates them, because
+the artifact is more frequent than the fact. Only a structural rule can: a
+dependent mark cannot begin a word, so a token starting with one is a fragment.
+Adding that filter dropped the artifact to zero while keeping ഗെയ്ൽ.
+
+This is worth stating in the paper. "Learn legality from counts" sounds clean and
+is not: **a corpus-derived constraint is only as good as its tokenizer**, and the
+failure is silent — a legality set that is confidently wrong looks exactly like
+one that is right.
+
+## The central result, now on clean measured data
+
+| model | mean legal set | constraint buys |
+|---|---|---|
+| hand-estimated | 63% | 0.0% |
+| measured, unfiltered | 32% | 0.0% |
+| **measured, filtered** | **52%** | **0.0%** |
+
+Three independently derived models, legal sets from 32% to 63%, **the same
+answer every time**. On the short sentence the constraint is in fact 2 steps
+*worse*. Findings 001–007 hold on real data.
+
+## What changed in the tests
+
+The suite asserted the project's hypothesis. It now asserts the established
+result: the hard constraint stays **within 5% of the soft model in either
+direction**, and the test fails loudly if a future model ever moves it further —
+because that would overturn seven findings and nobody should miss it.
