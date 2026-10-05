@@ -71,7 +71,7 @@ t('bigram rows are normalised', () => {
    contain keys this app invents (the pause graft, the 123/അ layer switches), or
    the comparison flatters us by giving the baseline features it does not have. */
 t('the baseline grid holds every typeable unit, and no app-only key', () => {
-  const appOnly = new Set(['ctl_pause', 'ctl_123', 'ctl_abc']);
+  const appOnly = new Set(['ctl_pause', 'ctl_123', 'ctl_abc', 'ctl_done']);
   const typeable = D.units.map(u => u.id).filter(id => !appOnly.has(id));
   eq(new Set(D.grid.order).size, D.grid.order.length, 'duplicates in the grid');
   eq([...D.grid.order].sort().join(','), typeable.sort().join(','));

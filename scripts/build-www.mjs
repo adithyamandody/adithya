@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 
 const SRC = 'app', OUT = 'www';
 const ASSETS = [
-  'index.html', 'app.js', 'scan.js', 'style.css', 'manifest.json', 'icon.svg', 'sw.js',
+  'index.html', 'app.js', 'scan.js', 'tour.js', 'style.css', 'manifest.json', 'icon.svg', 'sw.js',
   'data/units.json', 'data/bigrams.json', 'data/legal.json',
   'data/gridA.json', 'data/meta.json',
 ];

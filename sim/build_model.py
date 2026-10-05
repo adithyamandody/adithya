@@ -170,7 +170,8 @@ def main():
               # layer keys: injected by the app where they are useful, never
               # scanned for as ordinary units
               {"id": "ctl_123", "char": "123", "class": "CTL"},
-              {"id": "ctl_abc", "char": "ABC", "class": "CTL"}]
+              {"id": "ctl_abc", "char": "ABC", "class": "CTL"},
+              {"id": "ctl_done", "char": "DONE", "class": "CTL"}]
 
     CONTROL_MASS = {"ctl_undo": 0.060, "ctl_clear": 0.003}
 
@@ -198,7 +199,7 @@ def main():
     # not contain keys this app invents (the pause graft, the layer switches),
     # or the comparison flatters us by giving the baseline features it does not
     # have.
-    APP_ONLY = {"ctl_pause", "ctl_123", "ctl_abc"}
+    APP_ONLY = {"ctl_pause", "ctl_123", "ctl_abc", "ctl_done"}
     grid_order = [u["id"] for u in units if u["id"] not in APP_ONLY]
 
     out = pathlib.Path(args.out)

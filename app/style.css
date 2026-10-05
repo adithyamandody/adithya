@@ -271,3 +271,25 @@ textarea{
 }
 #flash.on{opacity:1;transform:translateX(-50%) translateY(0)}
 @media (prefers-reduced-motion:reduce){#flash{transition:none}}
+
+/* ── the tour ──────────────────────────────────────────────────────────── */
+#tour{
+  background:var(--panel);border:1.5px solid var(--hot);border-radius:12px;
+  padding:16px 18px;
+}
+#tour[hidden]{display:none}
+#tour .head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+#tour .n{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--hot);font-weight:700}
+#tour .dots{display:flex;gap:5px;margin-left:2px}
+#tour .dots i{width:7px;height:7px;border-radius:50%;background:#2b3542;display:block}
+#tour .dots i.done{background:var(--hot-dim)}
+#tour .dots i.now{background:var(--hot);box-shadow:0 0 0 3px rgba(57,216,196,.18)}
+#tour #tour-skip{margin-left:auto;padding:5px 12px;font-size:12px;background:none;color:var(--dim)}
+#tour h3{font-size:19px;margin:0 0 6px;font-weight:650;letter-spacing:-.2px}
+#tour p{font-size:14.5px;line-height:1.5;color:var(--ink);margin:0 0 8px}
+#tour p.hint{
+  color:var(--hot);font-weight:600;font-size:14px;margin:10px 0 0;
+  padding-top:10px;border-top:1px solid var(--line);
+}
+#tour b.t{font-family:var(--ml);font-size:1.5em;vertical-align:-.1em}
+#tour em{font-style:normal;font-weight:600}

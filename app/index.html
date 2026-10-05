@@ -23,7 +23,7 @@
     <p class="warn">Doing nothing is a real answer. That is the part that feels strange —
        half the time the right move is to sit still.</p>
     <button id="help-go">Try it</button>
-    <button id="help-practice" class="ghost">Guide me through a word</button>
+    <button id="help-practice" class="ghost">Take the tour — 6 steps</button>
   </div>
 </div>
 
@@ -43,6 +43,7 @@
 <div id="flash"></div>
 
 <section id="compose" class="view on">
+  <div id="tour" hidden></div>
   <div id="practice" hidden></div>
   <div id="text" class="ml" aria-live="polite"><span class="hint">Press <kbd>space</kbd>, tap, or use the switch</span></div>
 
@@ -165,6 +166,10 @@
   <p class="muted">Two switches give a third command. A long hold works on its own,
      because pressing two switches at once is hard with impaired motor control —
      and a chord works too, because some people find that easier than holding.</p>
+
+  <h3>Tour</h3>
+  <p class="muted">Six steps: press, wait, one letter, your name, your age, then send it.</p>
+  <button id="tour-start">Start the tour again</button>
 
   <h3>Quick phrases</h3>
   <p class="muted">Offered at the start of every utterance, one or two presses deep,

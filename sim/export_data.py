@@ -49,7 +49,7 @@ PUNCT = [("p_sp", " "), ("p_dot", "."), ("p_com", ","), ("p_q", "?")]
 # frequencies from the corpus.
 DIGITS = [(f"d_{i}", str(i)) for i in range(10)]
 CONTROL = [("ctl_undo", "⌫"), ("ctl_clear", "✕"), ("ctl_pause", "⏸"),
-           ("ctl_123", "123"), ("ctl_abc", "ABC")]
+           ("ctl_123", "123"), ("ctl_abc", "ABC"), ("ctl_done", "DONE")]
 
 CLASS_OF = {}
 UNITS = []
@@ -73,7 +73,7 @@ pa nna s_ii s_ee cha da nga s_oo c_n c_r v_a v_i v_e nja bha sha ha ga c_l ssa
 zha rra v_u dda ba dha ja s_uu v_aa tha kha v_oo c_ll p_dot c_nn gha chha jha
 ttha ddha pha s_ai s_o s_ri v_ee v_ai v_o v_au v_ii v_uu v_ri s_au x_vis
 p_com p_q d_1 d_2 d_0 d_3 d_5 d_4 d_9 d_6 d_8 d_7
-ctl_undo ctl_clear ctl_pause ctl_123 ctl_abc""".split()
+ctl_undo ctl_clear ctl_pause ctl_123 ctl_abc ctl_done""".split()
 
 assert set(RANK) == set(CLASS_OF), (
     f"inventory/rank mismatch: {set(CLASS_OF) ^ set(RANK)}"
@@ -100,7 +100,8 @@ UNIGRAM["ctl_clear"] = 0.003
 # ctl_pause is NOT typeable and is excluded from the legality sets below. The
 # scanner grafts it onto the all-wait path at runtime, because probability alone
 # cannot place it there — the all-lo spine does not track the least-likely leaf.
-UNIGRAM["ctl_123"] = 1e-7      # injected by the app, not scanned for
+UNIGRAM["ctl_123"] = 1e-7
+UNIGRAM["ctl_done"] = 1e-7      # injected by the app, not scanned for
 UNIGRAM["ctl_abc"] = 1e-7
 UNIGRAM["ctl_pause"] = 1e-7
 _z = sum(UNIGRAM.values())
@@ -160,17 +161,17 @@ GRID_COLS = 10
 GRID_ORDER = (
     [u for u, _ in VOWELS] + [u for u, _ in CONSONANTS] + [u for u, _ in SIGNS]
     + [u for u, _ in MARKS] + [u for u, _ in CHILLU] + [u for u, _ in PUNCT]
-    + [u for u, _ in CONTROL if u not in ("ctl_pause", "ctl_123", "ctl_abc")]
+    + [u for u, _ in CONTROL if u not in ("ctl_pause", "ctl_123", "ctl_abc", "ctl_done")]
 )
 
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
 
-    legal = {c: sorted(u for u in conditional(c) if u not in ("ctl_pause", "ctl_123", "ctl_abc"))
+    legal = {c: sorted(u for u in conditional(c) if u not in ("ctl_pause", "ctl_123", "ctl_abc", "ctl_done"))
              for c in CONTEXTS}
     bigrams = {c: {u: round(p, 8) for u, p in conditional(c).items()
-                   if u not in ("ctl_pause", "ctl_123", "ctl_abc")}
+                   if u not in ("ctl_pause", "ctl_123", "ctl_abc", "ctl_done")}
                for c in CONTEXTS}
 
     files = {

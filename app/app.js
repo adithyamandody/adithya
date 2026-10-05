@@ -11,6 +11,7 @@
 'use strict';
 
 import { ScanSession, simulate, decompose } from './scan.js';
+import { STEPS, sentenceFor, makeState, step as tourStep, isLast } from './tour.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -90,6 +91,7 @@ const IDLE_RUNS_BEFORE_PAUSE = 2;
    2000 ms that is about ten seconds, which is just someone thinking. Give it
    two before pausing, then wait for a press. */
 function maybePause() {
+  if (S.tour) { S.tour.waits++; tourProgress(); startScan(); return; }
   S.idleRuns = (S.idleRuns || 0) + 1;
   if (S.idleRuns < IDLE_RUNS_BEFORE_PAUSE) { startScan(); return; }
   pause(true);
@@ -114,6 +116,10 @@ function setNumMode(on) {
 }
 
 function commit(unitId) {
+  if (unitId === 'ctl_done') {
+    if (S.tour) { S.tour.doneKey = true; tourProgress(); }
+    return;
+  }
   if (unitId.startsWith('p:')) {          // a quick phrase: say it now
     const phrase = unitId.slice(2);
     S.buf = [];
@@ -166,6 +172,7 @@ function commit(unitId) {
   tick();
   paintText();
   paintStats();
+  if (S.tour) tourProgress();
   startScan();
 }
 
@@ -281,6 +288,7 @@ const DOTTED = '\u25CC';
 const LAYER_KEYS = {
   ctl_123: ['123', 'numbers'],
   ctl_abc: ['ABC', 'letters'],
+  ctl_done: ['✓', 'done'],
 };
 
 function chip(id, cls) {
@@ -329,6 +337,7 @@ function doPress() {
   S.lastPressAt = now;
   logSwitch(gap);
   if ($('#settings').classList.contains('on')) return;   // test view: no scanning
+  if (S.tour) S.tour.presses++;
   if (S.session && S.session.running) { S.session.press(); return; }
   if (S.paused) {
     S.paused = false;
@@ -409,11 +418,13 @@ function fireChord() {
    need something on paper, both if they are being understood by someone across
    a room AND signing a form. */
 function fireAction(how) {
+  if (S.tour) { S.tour.sent = true; }
   const act = S.action || 'speak';
   if (!S.buf.length) { flash(`${how}: nothing to send yet`); return; }
   if (act === 'none') { flash(`${how}: no action set`); return; }
   if (act === 'speak' || act === 'both') speak();
   if (act === 'write' || act === 'both') write();
+  if (S.tour) tourProgress();
   flash(`${how} → ${act === 'both' ? 'spoken and written' : act === 'write' ? 'sent to the plotter' : 'spoken'}`);
 }
 
@@ -573,8 +584,9 @@ function wire() {
   $('#clr').onclick = clearAll;
   $('#help-open').onclick = () => $('#help').classList.add('on');
   $('#help-go').onclick = () => { $('#help').classList.remove('on'); seen(); pause(); };
-  $('#help-practice').onclick = () => { $('#help').classList.remove('on'); seen(); startPractice($('#word').value.trim()); };
+  $('#help-practice').onclick = () => { $('#help').classList.remove('on'); seen(); startTour(); };
   $('#guide').onclick = () => startPractice($('#word').value.trim());
+  $('#tour-start').onclick = startTour;
   $('#phrases').value = phrases().join('\n');
   $('#save-phrases').onclick = () => {
     const list = $('#phrases').value.split('\n').map(x => x.trim()).filter(Boolean);
@@ -733,6 +745,18 @@ function lastWord() {
 function candidates() {
   const out = {};
 
+  if (S.tour) {
+    const st = tourStep(S.tour);
+    if (st && st.free) {
+      out.ctl_done = DONE_KEY_MASS;
+      if (st.numbers && !S.numMode) out.ctl_123 = 0.12;
+      if (S.numMode) return { ctl_abc: ABC_KEY_MASS, ctl_done: DONE_KEY_MASS };
+      return out;
+    }
+    if (S.numMode) return { ctl_abc: ABC_KEY_MASS };
+    return null;                     // early steps: letters only, no clutter
+  }
+
   /* In the number layer the only thing that matters is getting out again, so
      give the exit a large share and let the digits share the rest. */
   if (S.numMode) return { ctl_abc: ABC_KEY_MASS };
@@ -781,6 +805,88 @@ function candidates() {
    is the most urgent thing a switch user can want to do. */
 const NUM_KEY_MASS = 0.05;
 const ABC_KEY_MASS = 0.30;
+const DONE_KEY_MASS = 0.22;      // the tour's "I have finished typing" key
+
+/* ── the tour ────────────────────────────────────────────────────────────
+ * Nothing in here may require a finger. Where a step needs the person to say
+ * "I am done", a DONE key goes into the SCAN rather than a button onto the
+ * screen — the user this is built for has no other way to answer.
+ */
+function tourOn() { return !!S.tour; }
+
+function startTour() {
+  S.tour = makeState();
+  S.buf = [];
+  S.practice = null;
+  S.numMode = false;
+  $('#practice').hidden = true;
+  $('#help').classList.remove('on');
+  show('compose');
+  paintText();
+  paintTour();
+  startScan();
+}
+
+function endTour(completed) {
+  const t = S.tour;
+  S.tour = null;
+  $('#tour').hidden = true;
+  seen();
+  if (completed && t) {
+    const line = sentenceFor(t.kept.name, t.kept.age);
+    if (line) {
+      const list = [...new Set([line, ...phrases()])];
+      savePhrases(list);
+      $('#phrases') && ($('#phrases').value = list.join('\n'));
+      flash('Saved as a quick phrase — 3 presses from now on');
+    }
+  }
+  startScan();
+}
+
+/** Advance when the current step's condition is met. */
+function tourProgress() {
+  const t = S.tour;
+  if (!t) return;
+  const st = tourStep(t);
+  if (!st) return;
+  t.text = text();
+  if (!st.done(t)) { paintTour(); return; }
+
+  if (st.keep) t.kept[st.keep] = text().trim();
+  if (st.free && st.keep) learnWord(text().trim());
+
+  if (isLast(t)) { endTour(true); return; }
+  t.i++;
+  t.presses = 0; t.waits = 0; t.doneKey = false; t.sent = false;
+  /* The name and age steps each start from a blank line; the earlier steps
+     leave their practice letters behind, which would otherwise end up inside
+     the person's own name. */
+  if (tourStep(t).free || tourStep(t).target) S.buf = [];
+  if (tourStep(t).id === 'send') S.buf = decompose(D, sentenceFor(t.kept.name, t.kept.age))
+    .map(id => D.byId[id]).filter(Boolean);
+  S.numMode = false;
+  paintText();
+  paintTour();
+  startScan();
+}
+
+function paintTour() {
+  const t = S.tour;
+  const el = $('#tour');
+  if (!t) { el.hidden = true; return; }
+  const st = tourStep(t);
+  if (!st) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML =
+    `<div class="head"><span class="n">Step ${t.i + 1} of ${STEPS.length}</span>`
+    + `<span class="dots">${STEPS.map((_, i) =>
+        `<i class="${i < t.i ? 'done' : i === t.i ? 'now' : ''}"></i>`).join('')}</span>`
+    + `<button id="tour-skip">Skip</button></div>`
+    + `<h3>${st.title}</h3><p>${st.body}</p>`
+    + `<p class="hint">${st.hint}</p>`;
+  $('#tour-skip').onclick = () => endTour(false);
+}
 
 function setSpeed(ms) {
   S.period = ms;

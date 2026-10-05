@@ -448,5 +448,10 @@
   "id": "ctl_abc",
   "char": "ABC",
   "class": "CTL"
+ },
+ {
+  "id": "ctl_done",
+  "char": "DONE",
+  "class": "CTL"
  }
 ]
