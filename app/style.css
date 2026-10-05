@@ -244,3 +244,14 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--hot)}
   border-width:1.5px;border-style:dashed;
 }
 .u.word.hot{border-style:solid}
+.u.phrase{
+  font-family:var(--ml);min-width:auto;padding:4px 15px;font-size:22px;
+  flex-direction:column;gap:0;height:auto;min-height:52px;justify-content:center;
+}
+.u.phrase small{font-size:9px;letter-spacing:.07em;text-transform:uppercase;opacity:.65;font-family:system-ui}
+textarea{
+  background:var(--panel);color:var(--ink);border:1px solid var(--line);
+  border-radius:9px;padding:11px 12px;font-size:19px;max-width:460px;
+  resize:vertical;line-height:1.5;
+}
+#settings .ghost{background:none;color:var(--dim)}

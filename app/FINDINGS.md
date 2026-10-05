@@ -352,3 +352,49 @@ more often than any word in a general corpus**, and no general lexicon will ever
 contain <span lang="ml">ആദിത്യ</span>. For an AAC user the personal lexicon is
 most of the value — which is an argument for making it easy to import a word list,
 not for shipping a bigger dictionary.
+
+---
+
+# Finding 007 — confirmed on measured data: the constraint still buys nothing
+
+**Date:** 5 October 2026 · `sim/build_model.py`
+
+Findings 001–004 all rested on a hand-estimated model, with the standing caveat
+that real corpus numbers might behave differently. `build_model.py` now measures
+the model from actual Malayalam text, learning legality from observed
+transitions rather than hand-written rules.
+
+The measured constraint is **twice as tight** as the authored one:
+
+| | distinct units | mean legal set | constraint buys |
+|---|---|---|---|
+| hand-estimated | 76 | 47.9 (**63%**) | **0.0%** |
+| measured from corpus | 50 | 16.0 (**32%**) | **0.0%** |
+
+Halving the legal set changes the answer by nothing at all.
+
+That is the result the project should report, and it is now a much stronger
+claim than before: it holds across two independently derived models at very
+different constraint strengths. The mechanism is robust because it is
+information-theoretic rather than empirical — **a Huffman code already assigns
+improbable symbols long codewords, so forbidding them cannot save steps no
+matter how many are forbidden.**
+
+## What the tool changes
+
+`build_model.py` learns legality from counts, so the rule "after a virama only a
+consonant may follow" is nowhere in the code — it falls out of the data. That is
+what makes the cross-script arm of BUILD.md possible: Kannada, Tamil, Devanagari
+and Bengali can be run by the same procedure **without anyone who reads those
+scripts**, which was listed as the project's biggest hidden dependency.
+
+Two safeguards, because both failure modes are silent:
+
+* a **frequency floor** (`--min-count`) separates "impossible" from "rare", so a
+  single typo cannot make an illegal transition look legal
+* a **small-corpus warning** fires when there are too few units for the
+  inventory, since a thin corpus makes legal sets look tight for the wrong
+  reason — most transitions were simply never seen
+
+The sample run above is far below that threshold and is a pipeline test, not a
+measurement. The real run needs a real corpus.

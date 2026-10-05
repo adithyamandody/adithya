@@ -151,6 +151,16 @@
     <input id="set-server" type="text" placeholder="http://192.168.1.5:5000" inputmode="url">
   </label>
 
+  <h3>Quick phrases</h3>
+  <p class="muted">Offered at the start of every utterance, one or two presses deep,
+     and spoken the moment they are chosen. One per line. These should be
+     <em>this person's</em> phrases, not a generic list.</p>
+  <textarea id="phrases" class="ml" rows="8" spellcheck="false"></textarea>
+  <div class="row">
+    <button id="save-phrases">Save phrases</button>
+    <button id="reset-phrases" class="ghost">Reset to defaults</button>
+  </div>
+
   <h3>Switch test</h3>
   <p class="muted">Press the switch. Every press should light exactly one box.
      Two boxes from one press means the button is bouncing — fix the firmware debounce

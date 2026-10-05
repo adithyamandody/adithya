@@ -18,9 +18,15 @@ const ASSETS = [
   'data/units.json', 'data/bigrams.json', 'data/legal.json',
   'data/gridA.json', 'data/meta.json',
 ];
+/* Only present once sim/build_model.py has run on a real corpus. */
+const OPTIONAL = ['data/words.json'];
+];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE)
+    .then(c => c.addAll(ASSETS).then(() =>
+      Promise.all(OPTIONAL.map(u => c.add(u).catch(() => {})))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {

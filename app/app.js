@@ -41,6 +41,10 @@ async function loadData() {
       }))
   );
   D.units = units;
+  try {                                   // built by sim/build_model.py
+    const r = await fetch('data/words.json');
+    if (r.ok) D.words = await r.json();
+  } catch (_) { /* hand-estimated model has none; the seed list covers it */ }
   D.bigrams = bigrams;
   D.legal = legal;
   D.grid = grid;
@@ -99,6 +103,19 @@ function pause(afterIdle) {
 }
 
 function commit(unitId) {
+  if (unitId.startsWith('p:')) {          // a quick phrase: say it now
+    const phrase = unitId.slice(2);
+    S.buf = [];
+    for (const ch of [...phrase]) {
+      const unit = D.units.find(x => x.char === ch);
+      if (unit) S.buf.push(unit);
+    }
+    S.idleRuns = 0;
+    paintText(); paintStats();
+    speak();                              // urgency is the whole point
+    startScan();
+    return;
+  }
   if (unitId.startsWith('w:')) {         // a whole-word completion
     const word = unitId.slice(2);
     const pre = partial();
@@ -108,6 +125,7 @@ function commit(unitId) {
       if (unit) S.buf.push(unit);
     }
     learnWord(word);
+    learnPair(lastWord(), word);
     S.idleRuns = 0;
     tick(); paintText(); paintStats(); startScan();
     return;
@@ -118,7 +136,7 @@ function commit(unitId) {
   if (u.id === 'ctl_undo') S.buf.pop();
   else if (u.id === 'ctl_clear') S.buf = [];
   else {
-    if (u.class === 'SP') learnWord(partial());
+    if (u.class === 'SP') { const w = partial(); learnWord(w); learnPair(lastWord(), w); }
     S.buf.push(u);
   }
   S.idleRuns = 0;
@@ -240,6 +258,8 @@ const COMBINING = new Set(['S', 'VIR']);
 const DOTTED = '\u25CC';
 
 function chip(id, cls) {
+  if (id.startsWith('p:'))
+    return `<div class="u phrase ${cls}">${escapeHtml(id.slice(2))}<small>say it</small></div>`;
   if (id.startsWith('w:'))
     return `<div class="u word ${cls}">${escapeHtml(id.slice(2))}</div>`;
   const u = D.byId[id];
@@ -456,6 +476,19 @@ function wire() {
   $('#help-go').onclick = () => { $('#help').classList.remove('on'); seen(); pause(); };
   $('#help-practice').onclick = () => { $('#help').classList.remove('on'); seen(); startPractice($('#word').value.trim()); };
   $('#guide').onclick = () => startPractice($('#word').value.trim());
+  $('#phrases').value = phrases().join('\n');
+  $('#save-phrases').onclick = () => {
+    const list = $('#phrases').value.split('\n').map(x => x.trim()).filter(Boolean);
+    savePhrases(list);
+    $('#save-phrases').textContent = `Saved ${list.length}`;
+    setTimeout(() => { $('#save-phrases').textContent = 'Save phrases'; }, 1600);
+    startScan();
+  };
+  $('#reset-phrases').onclick = () => {
+    savePhrases(SEED_PHRASES);
+    $('#phrases').value = SEED_PHRASES.join('\n');
+    startScan();
+  };
   $('#test-reset').onclick = () => { testN = 0; $('#test-lamp').innerHTML = ''; $('#test-out').textContent = 'no presses yet'; };
 
   $('#set-period').onchange = e => setSpeed(+e.target.value);
@@ -494,13 +527,46 @@ const SEED_WORDS = [
   'നന്ദി', 'സുഖം', 'വെള്ളം', 'വേണം', 'എവിടെ',
 ];
 const MAX_CANDIDATES = 5;
+
+/* ── quick phrases ───────────────────────────────────────────────────────
+ * The thing a single-switch user needs most is not a faster alphabet. It is
+ * that urgent things are instant. "Pain" or "help" costing thirty seconds is
+ * the difference between a device that gets used and one that gets abandoned.
+ *
+ * Phrases are offered only at the START of an utterance, where they make
+ * sense, and they take a large share of the probability mass there — so they
+ * land one or two presses deep. Selecting one speaks it immediately.
+ *
+ * The seed list is deliberately short and generic. The real list is personal,
+ * which is why it is editable and stored per device.
+ */
+const SEED_PHRASES = [
+  'അതെ', 'ഇല്ല', 'ശരി', 'നന്ദി',
+  'സഹായം', 'വേദന', 'വെള്ളം', 'മതി',
+];
+const PHRASE_MASS = 0.42;        // at utterance start, phrases dominate
 const WORD_MASS = 0.34;        // share of probability words take from letters
+
+function phrases() {
+  try {
+    const own = JSON.parse(localStorage.getItem('aksharascan-phrases') || 'null');
+    if (Array.isArray(own)) return own;
+  } catch (_) {}
+  return SEED_PHRASES;
+}
+
+function savePhrases(list) {
+  try { localStorage.setItem('aksharascan-phrases', JSON.stringify(list)); } catch (_) {}
+}
 
 function lexicon() {
   let learned = [];
   try { learned = JSON.parse(localStorage.getItem('aksharascan-words') || '[]'); }
   catch (_) {}
-  return [...new Set([...learned, ...SEED_WORDS])];
+  /* Order matters: what this person typed, then what the corpus says is
+     common, then the seeds. A personal lexicon beats a general one for AAC —
+     no corpus contains someone's own name. */
+  return [...new Set([...learned, ...(D.words || []), ...SEED_WORDS])];
 }
 
 function learnWord(w) {
@@ -522,16 +588,68 @@ function partial() {
   return out.join('');
 }
 
-/** Candidate completions, as {unitId: weight} for the tree. */
+/** Words that followed this one before — next-word prediction, learned. */
+function nextWords(prev) {
+  try {
+    const pairs = JSON.parse(localStorage.getItem('aksharascan-pairs') || '{}');
+    return pairs[prev] || [];
+  } catch (_) { return []; }
+}
+
+function learnPair(prev, next) {
+  if (!prev || !next) return;
+  try {
+    const pairs = JSON.parse(localStorage.getItem('aksharascan-pairs') || '{}');
+    const list = pairs[prev] || [];
+    pairs[prev] = [next, ...list.filter(w => w !== next)].slice(0, 8);
+    localStorage.setItem('aksharascan-pairs', JSON.stringify(pairs));
+  } catch (_) {}
+}
+
+/** The last completed word, for next-word prediction. */
+function lastWord() {
+  const done = [];
+  let seenSpace = false;
+  for (let i = S.buf.length - 1; i >= 0; i--) {
+    if (S.buf[i].class === 'SP') { if (seenSpace) break; seenSpace = true; continue; }
+    if (seenSpace) done.unshift(S.buf[i].char);
+  }
+  return done.join('');
+}
+
+/** Everything the tree should offer beyond letters: {unitId: weight}. */
 function candidates() {
   if (!S.predict) return null;
+  const out = {};
+
+  // start of an utterance: offer phrases, and nothing is half-typed
+  if (!S.buf.length) {
+    const ph = phrases().slice(0, 8);
+    if (ph.length) {
+      const each = PHRASE_MASS / ph.length;
+      for (const p of ph) out[`p:${p}`] = each;
+    }
+    return Object.keys(out).length ? out : null;
+  }
+
   const pre = partial();
-  const hits = lexicon()
-    .filter(w => w.startsWith(pre) && w !== pre)
-    .slice(0, MAX_CANDIDATES);
+
+  // just finished a word: offer what usually follows it
+  if (!pre) {
+    const nx = nextWords(lastWord()).slice(0, MAX_CANDIDATES);
+    if (nx.length) {
+      const each = WORD_MASS / nx.length;
+      for (const w of nx) out[`w:${w}`] = each;
+    }
+    return Object.keys(out).length ? out : null;
+  }
+
+  // mid-word: complete it
+  const hits = lexicon().filter(w => w.startsWith(pre) && w !== pre).slice(0, MAX_CANDIDATES);
   if (!hits.length) return null;
   const each = WORD_MASS / hits.length;
-  return Object.fromEntries(hits.map(w => [`w:${w}`, each]));
+  for (const w of hits) out[`w:${w}`] = each;
+  return out;
 }
 
 function setSpeed(ms) {
