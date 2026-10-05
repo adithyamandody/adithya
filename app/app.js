@@ -179,6 +179,9 @@ function chip(id, cls) {
   if (!u) return '';
   const ctl = u.class === 'CTL' ? ' ctl' : '';
   const ch = u.id === 'p_sp' ? '␣' : u.char;
+  if (u.id === 'ctl_pause')
+    return `<div class="u ${cls} ctl pause" title="wait here to pause">`
+         + `${escapeHtml(ch)}<small>pause</small></div>`;
   return `<div class="u ${cls}${ctl}">${escapeHtml(ch)}</div>`;
 }
 
@@ -392,7 +395,18 @@ function restore() {
   else $('#help').classList.remove('on');
   pause();                      // idle until the first press; never type unprompted
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => { /* offline is a bonus */ });
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      /* A device that already holds an old worker gets the new one on the next
+         activation; reload once so it is actually running the new code rather
+         than the version it first installed. */
+      let reloading = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloading) return;
+        reloading = true;
+        location.reload();
+      });
+      reg.update().catch(() => {});
+    }).catch(() => { /* offline is a bonus, never a dependency */ });
   }
   if ('speechSynthesis' in window) speechSynthesis.getVoices();   // warm the list
 })();
