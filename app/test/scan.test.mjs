@@ -118,6 +118,22 @@ t('the unconstrained control offers every unit', () => {
 console.log('\ncounting');
 const SAMPLE = ['na', 's_ii', 'p_sp', 'sa', 's_u', 'kha', 'x_anu',
                 'p_sp', 'v_aa', 'nna', 's_oo'];
+/* A real name, and a good regression target: it exercises an independent
+   vowel, a vowel sign, and the virama that joins ത + യ into the conjunct ത്യ —
+   the three things that are hard to find on a scanning keyboard. */
+t('ആദിത്യ decomposes, round-trips, and every unit is legal in turn', () => {
+  const ids = decompose(D, 'ആദിത്യ');
+  eq(ids.join(' '), 'v_aa da s_i ta x_vir ya');
+  const chr = Object.fromEntries(D.units.map(u => [u.id, u.char]));
+  eq(ids.map(i => chr[i]).join(''), 'ആദിത്യ', 'round-trip');
+  let ctx = 'SP';
+  for (const id of ids) {
+    ok(D.legal[ctx].includes(id), `${id} illegal after ${ctx}`);
+    ok(codeOf(treeFor(D, ctx), id), `${id} unreachable in ${ctx}`);
+    ctx = D.units.find(u => u.id === id).class;
+  }
+});
+
 t('the sample sentence decomposes to 11 units', () => {
   eq(decompose(D, 'നീ സുഖം ആണോ').join(' '), SAMPLE.join(' '));
 });
