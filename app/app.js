@@ -29,7 +29,7 @@ const S = {
   lastPressAt: 0,
   practice: null,   // {ids, i, word} the guide's target
   predict: true,    // word prediction (BUILD.md C5)
-  numMode: false,   // the digits-only layer
+  layer: 'ml',      // 'ml' | 'num' | 'eng'
   action: 'speak',  // what a hold / chord does
 };
 
@@ -71,8 +71,8 @@ function startScan() {
     period: S.period,
     data: D,
     context,
-    extra: S.numMode ? null : candidates(),
-    only: S.numMode ? numberLayer() : null,
+    extra: candidates(),
+    only: layerUnits(S.layer),
     onFrame: paintScan,
     onEmit: commit,
     onIdle: maybePause,
@@ -107,12 +107,23 @@ function pause(afterIdle) {
     + 'Nothing is typed while you do nothing.</p>';
 }
 
-function setNumMode(on) {
-  S.numMode = on;
+function setLayer(name) {
+  S.layer = LAYERS[name] ? name : 'ml';
   S.idleRuns = 0;
-  $('#numkey').textContent = on ? 'ABC  letters' : '123  numbers';
-  $('#numkey').classList.toggle('on', on);
+  const k = $('#numkey');
+  if (k) {
+    k.textContent = S.layer === 'ml' ? '123  numbers'
+                  : S.layer === 'num' ? 'ABC  english' : '⇦  malayalam';
+    k.classList.toggle('on', S.layer !== 'ml');
+  }
   startScan();
+}
+
+/* The visible button cycles, for whoever is holding the tablet. The switch user
+   reaches every layer through the scan instead — a button they cannot press is
+   not a feature. */
+function cycleLayer() {
+  setLayer(S.layer === 'ml' ? 'num' : S.layer === 'num' ? 'eng' : 'ml');
 }
 
 function commit(unitId) {
@@ -150,14 +161,17 @@ function commit(unitId) {
   const u = D.byId[unitId];
   if (!u) return;
   if (u.id === 'ctl_pause') { maybePause(); return; }
-  if (u.id === 'ctl_123') { setNumMode(true); return; }
-  if (u.id === 'ctl_abc') { setNumMode(false); return; }
+  if (u.id === 'ctl_123') { setLayer('num'); return; }
+  if (u.id === 'ctl_eng') { setLayer('eng'); return; }
+  if (u.id === 'ctl_ml') { setLayer('ml'); return; }
   /* A space ends a number. Returning to letters unasked saves the user from
      having to find the exit at all in the common case. */
-  if (S.numMode && u.class === 'SP') {
+  /* A space ends a number or an English word. Coming home unasked means the
+     return key never has to be found in the common case. */
+  if (S.layer !== 'ml' && u.class === 'SP') {
     S.buf.push(u);
     paintText(); paintStats();
-    setNumMode(false);
+    setLayer('ml');
     return;
   }
   if (u.id === 'ctl_undo') S.buf.pop();
@@ -287,7 +301,8 @@ const DOTTED = '\u25CC';
 
 const LAYER_KEYS = {
   ctl_123: ['123', 'numbers'],
-  ctl_abc: ['ABC', 'letters'],
+  ctl_eng: ['ABC', 'english'],
+  ctl_ml: ['⇦', 'malayalam'],
   ctl_done: ['✓', 'done'],
 };
 
@@ -579,7 +594,7 @@ function wire() {
   $('#cmp-typed').onclick = () => runCompare(S.buf.map(u => u.id));
   $('#slower').onclick = () => nudgeSpeed(+1);   // + index = longer period
   $('#faster').onclick = () => nudgeSpeed(-1);
-  $('#numkey').onclick = () => setNumMode(!S.numMode);
+  $('#numkey').onclick = cycleLayer;
   $('#bksp').onclick = backspace;
   $('#clr').onclick = clearAll;
   $('#help-open').onclick = () => $('#help').classList.add('on');
@@ -663,11 +678,23 @@ const PHRASE_MASS = 0.42;        // at utterance start, phrases dominate
  * number costs ~9 steps against ~4 for a common letter. Switching to a
  * digits-only layer makes every digit ~3 steps and, more importantly, puts
  * them somewhere predictable. This is the "123" key. */
-function numberLayer() {
-  const digits = D.units.filter(u => u.class === 'NUM').map(u => u.id);
-  if (!digits.length) return null;
-  const sp = D.units.find(u => u.id === 'p_sp');
-  return [...digits, ...(sp ? ['p_sp'] : []), 'ctl_undo', 'ctl_abc'];
+/* Three layers. A boolean does not extend, so this is an enum: 'ml' is the
+ * default Malayalam alphabet, 'num' the digits, 'eng' the Latin letters.
+ *
+ * Each non-default layer carries a cheap way home. Leaving a mode you entered
+ * by accident is the most urgent thing a switch user can want, so the return
+ * key is always cheaper than anything it competes with. */
+const LAYERS = {
+  num: { cls: 'NUM', key: 'ctl_123', label: '123  numbers' },
+  eng: { cls: 'LAT', key: 'ctl_eng', label: 'ABC  english' },
+};
+
+function layerUnits(name) {
+  const spec = LAYERS[name];
+  if (!spec) return null;
+  const members = D.units.filter(u => u.class === spec.cls).map(u => u.id);
+  if (!members.length) return null;
+  return [...members, 'p_sp', 'ctl_undo', 'ctl_ml'];
 }
 const WORD_MASS = 0.34;        // share of probability words take from letters
 
@@ -749,23 +776,23 @@ function candidates() {
     const st = tourStep(S.tour);
     if (st && st.free) {
       out.ctl_done = DONE_KEY_MASS;
-      if (st.numbers && !S.numMode) out.ctl_123 = 0.12;
-      if (S.numMode) return { ctl_abc: ABC_KEY_MASS, ctl_done: DONE_KEY_MASS };
+      if (S.layer !== 'ml') return { ctl_ml: HOME_KEY_MASS, ctl_done: DONE_KEY_MASS };
+      if (st.numbers) out.ctl_123 = 0.12;
       return out;
     }
-    if (S.numMode) return { ctl_abc: ABC_KEY_MASS };
+    if (S.layer !== 'ml') return { ctl_ml: HOME_KEY_MASS };
     return null;                     // early steps: letters only, no clutter
   }
 
-  /* In the number layer the only thing that matters is getting out again, so
-     give the exit a large share and let the digits share the rest. */
-  if (S.numMode) return { ctl_abc: ABC_KEY_MASS };
+  /* Inside a layer the only thing that matters is getting out again. */
+  if (S.layer !== 'ml') return { ctl_ml: HOME_KEY_MASS };
 
   /* The 123 key is offered in EVERY context. Restricting it to word boundaries
      meant a user part-way through a word could not reach numbers at all
      without backspacing out — a trap, and one only reachable by a switch user
      since there is no finger to tap the button with. */
   out.ctl_123 = NUM_KEY_MASS;
+  out.ctl_eng = ENG_KEY_MASS;
 
   if (!S.predict) return out;
 
@@ -804,7 +831,8 @@ function candidates() {
    And LEAVING it must be cheaper still: escaping a mode you entered by accident
    is the most urgent thing a switch user can want to do. */
 const NUM_KEY_MASS = 0.05;
-const ABC_KEY_MASS = 0.30;
+const ENG_KEY_MASS = 0.04;
+const HOME_KEY_MASS = 0.30;
 const DONE_KEY_MASS = 0.22;      // the tour's "I have finished typing" key
 
 /* ── the tour ────────────────────────────────────────────────────────────
@@ -818,7 +846,7 @@ function startTour() {
   S.tour = makeState();
   S.buf = [];
   S.practice = null;
-  S.numMode = false;
+  S.layer = 'ml';
   $('#practice').hidden = true;
   $('#help').classList.remove('on');
   show('compose');
@@ -865,7 +893,7 @@ function tourProgress() {
   if (tourStep(t).free || tourStep(t).target) S.buf = [];
   if (tourStep(t).id === 'send') S.buf = decompose(D, sentenceFor(t.kept.name, t.kept.age))
     .map(id => D.byId[id]).filter(Boolean);
-  S.numMode = false;
+  S.layer = 'ml';
   paintText();
   paintTour();
   startScan();

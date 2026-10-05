@@ -55,6 +55,10 @@ MALAYALAM = {
     # silently papering over by dropping them.
     "NUM": [(0x0030, 0x0039),               # 0-9, what Malayalam text mostly uses
             (0x0D66, 0x0D6F)],              # ൦-൯, the Malayalam digits
+    # Latin letters. Malayalam speakers write English constantly — names,
+    # brands, technical words, anything typed into a phone. The corpus was
+    # already full of them and dropping them all ('a'x496, 'e'x492, 't'x408).
+    "LAT": [(0x0041, 0x005A), (0x0061, 0x007A)],
 }
 PUNCT = " .,?!\n\t"
 SKIP = {0x200C, 0x200D}      # ZWNJ / ZWJ: rendering hints, not units
@@ -170,7 +174,8 @@ def main():
               # layer keys: injected by the app where they are useful, never
               # scanned for as ordinary units
               {"id": "ctl_123", "char": "123", "class": "CTL"},
-              {"id": "ctl_abc", "char": "ABC", "class": "CTL"},
+              {"id": "ctl_eng", "char": "ABC", "class": "CTL"},
+              {"id": "ctl_ml", "char": "\u21e6", "class": "CTL"},
               {"id": "ctl_done", "char": "DONE", "class": "CTL"}]
 
     CONTROL_MASS = {"ctl_undo": 0.060, "ctl_clear": 0.003}
@@ -199,7 +204,7 @@ def main():
     # not contain keys this app invents (the pause graft, the layer switches),
     # or the comparison flatters us by giving the baseline features it does not
     # have.
-    APP_ONLY = {"ctl_pause", "ctl_123", "ctl_abc", "ctl_done"}
+    APP_ONLY = {"ctl_pause", "ctl_123", "ctl_eng", "ctl_ml", "ctl_done"}
     grid_order = [u["id"] for u in units if u["id"] not in APP_ONLY]
 
     out = pathlib.Path(args.out)

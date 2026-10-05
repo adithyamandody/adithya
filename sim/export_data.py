@@ -48,14 +48,18 @@ PUNCT = [("p_sp", " "), ("p_dot", "."), ("p_com", ","), ("p_q", "?")]
 # typed at all. Kept in step with build_model.py, which learns their real
 # frequencies from the corpus.
 DIGITS = [(f"d_{i}", str(i)) for i in range(10)]
+# Latin letters, for the English layer.
+LATIN = ([(f"L_{c}", c) for c in "abcdefghijklmnopqrstuvwxyz"]
+         + [(f"U_{c.upper()}", c.upper()) for c in "abcdefghijklmnopqrstuvwxyz"])
 CONTROL = [("ctl_undo", "⌫"), ("ctl_clear", "✕"), ("ctl_pause", "⏸"),
-           ("ctl_123", "123"), ("ctl_abc", "ABC"), ("ctl_done", "DONE")]
+           ("ctl_123", "123"), ("ctl_eng", "ABC"), ("ctl_ml", "\u21e6"),
+           ("ctl_done", "DONE")]
 
 CLASS_OF = {}
 UNITS = []
 for ids, cls in (
     (VOWELS, "V"), (CONSONANTS, "C"), (SIGNS, "S"), (CHILLU, "CH"),
-    (PUNCT, "SP"), (DIGITS, "NUM"), (CONTROL, "CTL"),
+    (PUNCT, "SP"), (DIGITS, "NUM"), (LATIN, "LAT"), (CONTROL, "CTL"),
 ):
     for uid, ch in ids:
         CLASS_OF[uid] = cls
@@ -73,7 +77,11 @@ pa nna s_ii s_ee cha da nga s_oo c_n c_r v_a v_i v_e nja bha sha ha ga c_l ssa
 zha rra v_u dda ba dha ja s_uu v_aa tha kha v_oo c_ll p_dot c_nn gha chha jha
 ttha ddha pha s_ai s_o s_ri v_ee v_ai v_o v_au v_ii v_uu v_ri s_au x_vis
 p_com p_q d_1 d_2 d_0 d_3 d_5 d_4 d_9 d_6 d_8 d_7
-ctl_undo ctl_clear ctl_pause ctl_123 ctl_abc ctl_done""".split()
+L_e L_t L_a L_o L_i L_n L_s L_r L_h L_l L_d L_c L_u L_m L_f L_p L_g L_w L_y L_b
+L_v L_k L_x L_j L_q L_z
+U_T U_A U_S U_I U_M U_C U_B U_P U_H U_D U_R U_E U_N U_L U_W U_G U_F U_O U_K U_J
+U_V U_U U_Y U_Q U_X U_Z
+ctl_undo ctl_clear ctl_pause ctl_123 ctl_eng ctl_ml ctl_done""".split()
 
 assert set(RANK) == set(CLASS_OF), (
     f"inventory/rank mismatch: {set(CLASS_OF) ^ set(RANK)}"
@@ -101,6 +109,8 @@ UNIGRAM["ctl_clear"] = 0.003
 # scanner grafts it onto the all-wait path at runtime, because probability alone
 # cannot place it there — the all-lo spine does not track the least-likely leaf.
 UNIGRAM["ctl_123"] = 1e-7
+UNIGRAM["ctl_eng"] = 1e-7
+UNIGRAM["ctl_ml"] = 1e-7
 UNIGRAM["ctl_done"] = 1e-7      # injected by the app, not scanned for
 UNIGRAM["ctl_abc"] = 1e-7
 UNIGRAM["ctl_pause"] = 1e-7
@@ -124,10 +134,11 @@ UNIGRAM = {u: p / _z for u, p in UNIGRAM.items()}
 #   after CH   syllable is closed — consonant or space only
 #
 TRANSITIONS = {
-    "SP":  {"C": .68, "V": .22, "NUM": .06, "CTL": .04},
+    "SP":  {"C": .62, "V": .20, "NUM": .06, "LAT": .08, "CTL": .04},
     "C":   {"S": .44, "C": .22, "VIR": .16, "SP": .08, "ANU": .04,
             "CH": .02, "CTL": .04},
     "NUM": {"NUM": .55, "SP": .40, "CTL": .05},
+    "LAT": {"LAT": .74, "SP": .21, "CTL": .05},
     "S":   {"C": .54, "SP": .33, "ANU": .05, "CH": .04, "CTL": .04},
     "VIR": {"C": .93, "SP": .03, "CTL": .04},
     "V":   {"C": .84, "SP": .09, "ANU": .03, "CTL": .04},
@@ -135,7 +146,7 @@ TRANSITIONS = {
     "CH":  {"SP": .54, "C": .42, "CTL": .04},
     # After a control key the app recomputes the real context from the text;
     # this row is only a fallback for an empty buffer, so it mirrors SP.
-    "CTL": {"C": .68, "V": .22, "NUM": .06, "CTL": .04},
+    "CTL": {"C": .62, "V": .20, "NUM": .06, "LAT": .08, "CTL": .04},
 }
 
 CONTEXTS = list(TRANSITIONS)
@@ -161,17 +172,17 @@ GRID_COLS = 10
 GRID_ORDER = (
     [u for u, _ in VOWELS] + [u for u, _ in CONSONANTS] + [u for u, _ in SIGNS]
     + [u for u, _ in MARKS] + [u for u, _ in CHILLU] + [u for u, _ in PUNCT]
-    + [u for u, _ in CONTROL if u not in ("ctl_pause", "ctl_123", "ctl_abc", "ctl_done")]
+    + [u for u, _ in CONTROL if u not in ("ctl_pause", "ctl_123", "ctl_eng", "ctl_ml", "ctl_done")]
 )
 
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
 
-    legal = {c: sorted(u for u in conditional(c) if u not in ("ctl_pause", "ctl_123", "ctl_abc", "ctl_done"))
+    legal = {c: sorted(u for u in conditional(c) if u not in ("ctl_pause", "ctl_123", "ctl_eng", "ctl_ml", "ctl_done"))
              for c in CONTEXTS}
     bigrams = {c: {u: round(p, 8) for u, p in conditional(c).items()
-                   if u not in ("ctl_pause", "ctl_123", "ctl_abc", "ctl_done")}
+                   if u not in ("ctl_pause", "ctl_123", "ctl_eng", "ctl_ml", "ctl_done")}
                for c in CONTEXTS}
 
     files = {

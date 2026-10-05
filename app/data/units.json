@@ -75,6 +75,251 @@
   "class": "SP"
  },
  {
+  "id": "U_A",
+  "char": "A",
+  "class": "LAT"
+ },
+ {
+  "id": "U_B",
+  "char": "B",
+  "class": "LAT"
+ },
+ {
+  "id": "U_C",
+  "char": "C",
+  "class": "LAT"
+ },
+ {
+  "id": "U_D",
+  "char": "D",
+  "class": "LAT"
+ },
+ {
+  "id": "U_E",
+  "char": "E",
+  "class": "LAT"
+ },
+ {
+  "id": "U_F",
+  "char": "F",
+  "class": "LAT"
+ },
+ {
+  "id": "U_G",
+  "char": "G",
+  "class": "LAT"
+ },
+ {
+  "id": "U_H",
+  "char": "H",
+  "class": "LAT"
+ },
+ {
+  "id": "U_I",
+  "char": "I",
+  "class": "LAT"
+ },
+ {
+  "id": "U_J",
+  "char": "J",
+  "class": "LAT"
+ },
+ {
+  "id": "U_K",
+  "char": "K",
+  "class": "LAT"
+ },
+ {
+  "id": "U_L",
+  "char": "L",
+  "class": "LAT"
+ },
+ {
+  "id": "U_M",
+  "char": "M",
+  "class": "LAT"
+ },
+ {
+  "id": "U_N",
+  "char": "N",
+  "class": "LAT"
+ },
+ {
+  "id": "U_O",
+  "char": "O",
+  "class": "LAT"
+ },
+ {
+  "id": "U_P",
+  "char": "P",
+  "class": "LAT"
+ },
+ {
+  "id": "U_R",
+  "char": "R",
+  "class": "LAT"
+ },
+ {
+  "id": "U_S",
+  "char": "S",
+  "class": "LAT"
+ },
+ {
+  "id": "U_T",
+  "char": "T",
+  "class": "LAT"
+ },
+ {
+  "id": "U_U",
+  "char": "U",
+  "class": "LAT"
+ },
+ {
+  "id": "U_V",
+  "char": "V",
+  "class": "LAT"
+ },
+ {
+  "id": "U_W",
+  "char": "W",
+  "class": "LAT"
+ },
+ {
+  "id": "U_Y",
+  "char": "Y",
+  "class": "LAT"
+ },
+ {
+  "id": "U_Z",
+  "char": "Z",
+  "class": "LAT"
+ },
+ {
+  "id": "L_a",
+  "char": "a",
+  "class": "LAT"
+ },
+ {
+  "id": "L_b",
+  "char": "b",
+  "class": "LAT"
+ },
+ {
+  "id": "L_c",
+  "char": "c",
+  "class": "LAT"
+ },
+ {
+  "id": "L_d",
+  "char": "d",
+  "class": "LAT"
+ },
+ {
+  "id": "L_e",
+  "char": "e",
+  "class": "LAT"
+ },
+ {
+  "id": "L_f",
+  "char": "f",
+  "class": "LAT"
+ },
+ {
+  "id": "L_g",
+  "char": "g",
+  "class": "LAT"
+ },
+ {
+  "id": "L_h",
+  "char": "h",
+  "class": "LAT"
+ },
+ {
+  "id": "L_i",
+  "char": "i",
+  "class": "LAT"
+ },
+ {
+  "id": "L_j",
+  "char": "j",
+  "class": "LAT"
+ },
+ {
+  "id": "L_k",
+  "char": "k",
+  "class": "LAT"
+ },
+ {
+  "id": "L_l",
+  "char": "l",
+  "class": "LAT"
+ },
+ {
+  "id": "L_m",
+  "char": "m",
+  "class": "LAT"
+ },
+ {
+  "id": "L_n",
+  "char": "n",
+  "class": "LAT"
+ },
+ {
+  "id": "L_o",
+  "char": "o",
+  "class": "LAT"
+ },
+ {
+  "id": "L_p",
+  "char": "p",
+  "class": "LAT"
+ },
+ {
+  "id": "L_r",
+  "char": "r",
+  "class": "LAT"
+ },
+ {
+  "id": "L_s",
+  "char": "s",
+  "class": "LAT"
+ },
+ {
+  "id": "L_t",
+  "char": "t",
+  "class": "LAT"
+ },
+ {
+  "id": "L_u",
+  "char": "u",
+  "class": "LAT"
+ },
+ {
+  "id": "L_v",
+  "char": "v",
+  "class": "LAT"
+ },
+ {
+  "id": "L_w",
+  "char": "w",
+  "class": "LAT"
+ },
+ {
+  "id": "L_x",
+  "char": "x",
+  "class": "LAT"
+ },
+ {
+  "id": "L_y",
+  "char": "y",
+  "class": "LAT"
+ },
+ {
+  "id": "L_z",
+  "char": "z",
+  "class": "LAT"
+ },
+ {
   "id": "x_anu",
   "char": "ം",
   "class": "ANU"
@@ -445,8 +690,13 @@
   "class": "CTL"
  },
  {
-  "id": "ctl_abc",
+  "id": "ctl_eng",
   "char": "ABC",
+  "class": "CTL"
+ },
+ {
+  "id": "ctl_ml",
+  "char": "⇦",
   "class": "CTL"
  },
  {
