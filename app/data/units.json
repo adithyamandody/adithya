@@ -438,5 +438,15 @@
   "id": "ctl_pause",
   "char": "⏸",
   "class": "CTL"
+ },
+ {
+  "id": "ctl_123",
+  "char": "123",
+  "class": "CTL"
+ },
+ {
+  "id": "ctl_abc",
+  "char": "ABC",
+  "class": "CTL"
  }
 ]

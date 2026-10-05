@@ -150,8 +150,12 @@ def main():
     try:
         sys.path.insert(0, str(pathlib.Path(__file__).parent))
         import export_data as ed
-        known = {ch: uid for uid, ch in
-                 [(u["id"], u["char"]) for u in ed.UNITS]}
+        # Control units are UI, not script. ctl_abc displays അ as its icon, and
+        # അ is also a real vowel — including controls here let the UI key
+        # overwrite the letter's own identity and v_a vanished from the
+        # inventory entirely. Never let a UI glyph claim a character.
+        known = {u["char"]: u["id"] for u in ed.UNITS
+                 if u["class"] != "CTL"}
     except Exception as e:                       # standalone use is still fine
         print(f"note: readable ids unavailable ({e}); using codepoint ids")
 
@@ -162,7 +166,11 @@ def main():
     units = [{"id": ids[u], "char": u, "class": cls_of[u]} for u in sorted(uni)]
     units += [{"id": "ctl_undo", "char": "⌫", "class": "CTL"},
               {"id": "ctl_clear", "char": "✕", "class": "CTL"},
-              {"id": "ctl_pause", "char": "⏸", "class": "CTL"}]
+              {"id": "ctl_pause", "char": "⏸", "class": "CTL"},
+              # layer keys: injected by the app where they are useful, never
+              # scanned for as ordinary units
+              {"id": "ctl_123", "char": "123", "class": "CTL"},
+              {"id": "ctl_abc", "char": "ABC", "class": "CTL"}]
 
     CONTROL_MASS = {"ctl_undo": 0.060, "ctl_clear": 0.003}
 
@@ -186,7 +194,12 @@ def main():
     if "CTL" not in legal and "SP" in legal:
         legal["CTL"], bigrams["CTL"] = legal["SP"], bigrams["SP"]
 
-    grid_order = [u["id"] for u in units]
+    # The row-column grid is the BASELINE: what a stock IME presents. It must
+    # not contain keys this app invents (the pause graft, the layer switches),
+    # or the comparison flatters us by giving the baseline features it does not
+    # have.
+    APP_ONLY = {"ctl_pause", "ctl_123", "ctl_abc"}
+    grid_order = [u["id"] for u in units if u["id"] not in APP_ONLY]
 
     out = pathlib.Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

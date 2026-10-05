@@ -28,6 +28,7 @@ const S = {
   lastPressAt: 0,
   practice: null,   // {ids, i, word} the guide's target
   predict: true,    // word prediction (BUILD.md C5)
+  numMode: false,   // the digits-only layer
 };
 
 /* ══════════════════════════ data ══════════════════════════ */
@@ -68,7 +69,8 @@ function startScan() {
     period: S.period,
     data: D,
     context,
-    extra: candidates(),
+    extra: S.numMode ? null : candidates(),
+    only: S.numMode ? numberLayer() : null,
     onFrame: paintScan,
     onEmit: commit,
     onIdle: maybePause,
@@ -102,6 +104,14 @@ function pause(afterIdle) {
     + 'Nothing is typed while you do nothing.</p>';
 }
 
+function setNumMode(on) {
+  S.numMode = on;
+  S.idleRuns = 0;
+  $('#numkey').textContent = on ? 'ABC  letters' : '123  numbers';
+  $('#numkey').classList.toggle('on', on);
+  startScan();
+}
+
 function commit(unitId) {
   if (unitId.startsWith('p:')) {          // a quick phrase: say it now
     const phrase = unitId.slice(2);
@@ -133,6 +143,8 @@ function commit(unitId) {
   const u = D.byId[unitId];
   if (!u) return;
   if (u.id === 'ctl_pause') { maybePause(); return; }
+  if (u.id === 'ctl_123') { setNumMode(true); return; }
+  if (u.id === 'ctl_abc') { setNumMode(false); return; }
   if (u.id === 'ctl_undo') S.buf.pop();
   else if (u.id === 'ctl_clear') S.buf = [];
   else {
@@ -257,7 +269,16 @@ function paintScan(f) {
 const COMBINING = new Set(['S', 'VIR']);
 const DOTTED = '\u25CC';
 
+const LAYER_KEYS = {
+  ctl_123: ['123', 'numbers'],
+  ctl_abc: ['ABC', 'letters'],
+};
+
 function chip(id, cls) {
+  if (LAYER_KEYS[id]) {
+    const [glyph, label] = LAYER_KEYS[id];
+    return `<div class="u layer ${cls}">${escapeHtml(glyph)}<small>${label}</small></div>`;
+  }
   if (id.startsWith('p:'))
     return `<div class="u phrase ${cls}">${escapeHtml(id.slice(2))}<small>say it</small></div>`;
   if (id.startsWith('w:'))
@@ -470,6 +491,7 @@ function wire() {
   $('#cmp-typed').onclick = () => runCompare(S.buf.map(u => u.id));
   $('#slower').onclick = () => nudgeSpeed(+1);   // + index = longer period
   $('#faster').onclick = () => nudgeSpeed(-1);
+  $('#numkey').onclick = () => setNumMode(!S.numMode);
   $('#bksp').onclick = backspace;
   $('#clr').onclick = clearAll;
   $('#help-open').onclick = () => $('#help').classList.add('on');
@@ -545,6 +567,18 @@ const SEED_PHRASES = [
   'സഹായം', 'വേദന', 'വെള്ളം', 'മതി',
 ];
 const PHRASE_MASS = 0.42;        // at utterance start, phrases dominate
+
+/* ── the number layer ────────────────────────────────────────────────────
+ * Digits are rare in prose, so the tree buries them: the first digit of a
+ * number costs ~9 steps against ~4 for a common letter. Switching to a
+ * digits-only layer makes every digit ~3 steps and, more importantly, puts
+ * them somewhere predictable. This is the "123" key. */
+function numberLayer() {
+  const digits = D.units.filter(u => u.class === 'NUM').map(u => u.id);
+  if (!digits.length) return null;
+  const sp = D.units.find(u => u.id === 'p_sp');
+  return [...digits, ...(sp ? ['p_sp'] : []), 'ctl_undo', 'ctl_abc'];
+}
 const WORD_MASS = 0.34;        // share of probability words take from letters
 
 function phrases() {
@@ -624,6 +658,7 @@ function candidates() {
 
   // start of an utterance: offer phrases, and nothing is half-typed
   if (!S.buf.length) {
+    out['ctl_123'] = NUM_KEY_MASS;
     const ph = phrases().slice(0, 8);
     if (ph.length) {
       const each = PHRASE_MASS / ph.length;
@@ -636,6 +671,7 @@ function candidates() {
 
   // just finished a word: offer what usually follows it
   if (!pre) {
+    out['ctl_123'] = NUM_KEY_MASS;
     const nx = nextWords(lastWord()).slice(0, MAX_CANDIDATES);
     if (nx.length) {
       const each = WORD_MASS / nx.length;
@@ -651,6 +687,9 @@ function candidates() {
   for (const w of hits) out[`w:${w}`] = each;
   return out;
 }
+
+/* Reaching the number layer must itself be cheap, or the layer solves nothing. */
+const NUM_KEY_MASS = 0.05;
 
 function setSpeed(ms) {
   S.period = ms;

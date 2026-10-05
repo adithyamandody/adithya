@@ -255,3 +255,9 @@ textarea{
   resize:vertical;line-height:1.5;
 }
 #settings .ghost{background:none;color:var(--dim)}
+.u.layer{
+  flex-direction:column;gap:0;min-width:62px;font-size:17px;font-family:system-ui;
+  font-weight:600;
+}
+.u.layer small{font-size:9px;letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-weight:400}
+#numkey.on{background:var(--hot-dim);border-color:var(--hot);color:var(--ink)}

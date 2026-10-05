@@ -44,8 +44,15 @@ export function graftPause(root, pauseId = 'ctl_pause') {
  * share of probability mass words should take from letters. Giving words real
  * mass is the point — it is what buys them short codewords and therefore makes
  * a sentence finishable. This is condition C5 in BUILD.md. */
-export function treeFor(D, ctx, extra) {
-  const allowed = D.legal[ctx] || D.legal.SP;
+/* `only` restricts the tree to a subset — the number layer. In running prose
+ * digits are rare, so Huffman correctly buries them: the first digit of a
+ * number costs about 9 steps from a word start, against 4 for a common letter.
+ * A dedicated layer is the same answer every phone keyboard reaches with its
+ * "123" key, and it makes the cost predictable instead of a hunt. */
+export function treeFor(D, ctx, extra, only) {
+  const allowed = only && only.length
+    ? only
+    : (D.legal[ctx] || D.legal.SP);
   const row = D.bigrams[ctx] || D.bigrams.SP;
   const probs = {};
   let z = 0;
@@ -131,12 +138,13 @@ export function simulate(D, ids, mode) {
  * rhythm) and corrupts the measurement.
  */
 export class ScanSession {
-  constructor({ mode, period, data, context, extra, onFrame, onEmit, onIdle, now, schedule }) {
+  constructor({ mode, period, data, context, extra, only, onFrame, onEmit, onIdle, now, schedule }) {
     this.mode = mode;
     this.period = period;
     this.D = data;
     this.ctx = context || (() => 'SP');
     this.extra = extra || null;   // whole-word candidates
+    this.only = only || null;     // restrict to a layer (the number keys)
     this.onFrame = onFrame || (() => {});
     this.onEmit = onEmit || (() => {});
     this.onIdle = onIdle || (() => {});
@@ -175,7 +183,7 @@ export class ScanSession {
   begin() {
     this.running = true;
     if (this.mode === 'B') {
-      this.node = treeFor(this.D, this.ctx(), this.extra);
+      this.node = treeFor(this.D, this.ctx(), this.extra, this.only);
       if (!this.node) { this.running = false; return; }
       if (this.node.unit) { this.running = false; this.onEmit(this.node.unit); return; }
     } else {

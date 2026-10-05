@@ -87,7 +87,6 @@
   "c_l",
   "c_ll",
   "ctl_undo",
-  "ctl_clear",
-  "ctl_pause"
+  "ctl_clear"
  ]
 }
