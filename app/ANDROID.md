@@ -30,12 +30,27 @@ time.
 | Immersive sticky mode | A stray tap on a system bar ends a demo |
 | **No `INTERNET` permission** | Everything runs on device. The scan trees are built at runtime from bundled JSON and speech uses the system TTS. An AAC device that needs a network is one that fails at a fair |
 
-## The switch
+## The switches
 
-The ESP32 pairs as a Bluetooth HID keyboard and sends a spacebar
-(`app/firmware/switch/switch.ino`). The app treats that exactly like a key
-press, so it also works with any commercial switch interface — and with the
-tablet's own screen, which is how you demo it without hardware.
+Two switches, one ESP32, paired as a Bluetooth HID keyboard
+(`app/firmware/switch/switch.ino`):
+
+| Switch | GPIO | Sends | Does |
+|---|---|---|---|
+| 1 | 4 | `SPACE` | **Select** — "yes, my letter is in this group" |
+| 2 | 5 | `BACKSPACE` | **Undo** — delete the last unit |
+
+Wiring per switch: one leg to the GPIO pin, the other to GND. No resistors —
+`INPUT_PULLUP` handles that. Use 3.5 mm mono jacks (the AAC standard) so a user
+can plug in their own switch: tip to GPIO, sleeve to GND.
+
+Because these are ordinary key events, **any** commercial switch interface that
+emits space and backspace will drive the app, and both switches work in every
+other app on the tablet. Without hardware, the keyboard and the touchscreen do
+the same job, which is how you demo it on a laptop.
+
+Backspace deliberately does not wait for the current scan to finish — someone
+reaching for undo should never have to sit through a selection first.
 
 ## JDK note
 

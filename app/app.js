@@ -212,11 +212,23 @@ function doPress() {
   startScan();
 }
 
+/* Two switches, two keys.
+ *   switch 1 -> SPACE      select   (the scan answer: "yes, it is in here")
+ *   switch 2 -> BACKSPACE  undo     (delete the last unit)
+ * Both arrive as ordinary key events because the ESP32 pairs as a Bluetooth
+ * HID keyboard, so nothing here is specific to our hardware — any commercial
+ * switch interface that emits these keys works too. */
 addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
   if (e.code === 'Space' || e.key === ' ' || e.key === 'Enter') {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
     e.preventDefault();
     doPress();
+    return;
+  }
+  if (e.key === 'Backspace' || e.key === 'Delete') {
+    e.preventDefault();              // or the browser navigates back
+    doBackspace();
   }
 });
 addEventListener('pointerdown', e => {
@@ -224,6 +236,18 @@ addEventListener('pointerdown', e => {
   if (e.target.closest('button,select,input,nav')) return;
   doPress();
 });
+
+/* Switch 2. Deliberately NOT routed through doPress(): backspace must work
+   whether the scanner is running, paused, or mid-selection — a user reaching
+   for undo should never have to wait for a scan to finish first. */
+function doBackspace() {
+  S.lastBkspAt = performance.now();
+  logSwitch(null, 'backspace');
+  if (S.session && S.session.running) S.session.stop();
+  backspace();
+  if (S.paused) { $('#scan').innerHTML = ''; S.paused = false; }
+  startScan();
+}
 
 /* audible tick — WebAudio, so there is no asset to fail to load */
 let ac = null;
@@ -307,10 +331,17 @@ function runCompare(ids) {
 /* ═══════════════════════ switch test ══════════════════════ */
 
 let testN = 0;
-function logSwitch(gap) {
+function logSwitch(gap, which = 'select') {
   $('#link').className = 'pill ok';
-  $('#link').textContent = 'switch: connected';
+  $('#link').textContent = which === 'backspace' ? 'switch 2: backspace' : 'switch 1: select';
   if (!$('#settings').classList.contains('on')) return;
+  if (which === 'backspace') {
+    const i = document.createElement('i');
+    i.className = 'on bk';
+    $('#test-lamp').appendChild(i);
+    $('#test-out').textContent = 'switch 2 (backspace) registered — this is the undo switch.';
+    return;
+  }
   const bounce = gap < 60 && testN > 0;      // two presses <60ms apart = bounce
   const i = document.createElement('i');
   i.className = bounce ? 'bounce' : 'on';

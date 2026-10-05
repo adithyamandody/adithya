@@ -231,3 +231,4 @@ input[type=checkbox]{width:19px;height:19px;accent-color:var(--hot)}
   color:var(--ink);background:#1c2430;border:1px solid var(--line);
   border-radius:8px;padding:8px 6px;
 }
+#test-lamp i.bk{background:#f0a0a0;border-color:#f0a0a0}
