@@ -58,6 +58,12 @@ counters diverge — they feel the difference in their own thumb.
 
 Then the composed sentence is spoken aloud, and a repurposed 3D printer writes it on paper.
 
+## Attribution
+
+The scan model is measured from Malayalam Wikipedia (CC BY-SA 4.0) and the
+plotter bundles Noto Sans Malayalam (SIL OFL 1.1). Full detail, including what
+that means for the derived data files, in [NOTICE.md](NOTICE.md).
+
 ## Status
 
 - [x] Project selected and specified
