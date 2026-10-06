@@ -66,9 +66,35 @@ that means for the derived data files, in [NOTICE.md](NOTICE.md).
 
 ## Status
 
-- [x] Project selected and specified
-- [x] App architecture decided
-- [ ] Simulator → real press-count numbers
-- [ ] PWA scanning engine
-- [ ] ESP32 switch firmware
-- [ ] Pen plotter
+| | |
+|---|---|
+| **App** | Web and Android. [Try it](https://aksharascan-adithyamandodys-projects.vercel.app) · [APK](https://github.com/adithyamandody/adithya/releases/latest) |
+| **Setup** | [SETUP.md](SETUP.md) — forty minutes from a blank tablet to a working switch |
+| **Model** | Measured from 113,324 units of real Malayalam, not hand-estimated |
+| **Scanning** | Three layers (Malayalam, 123, ABC), all reachable by switch alone |
+| **Prediction** | Word completion and next-word, learned from use |
+| **Speech** | Device voice offline; five cloud providers, cached so they work offline after one fetch |
+| **Switch** | Two-switch ESP32 over Bluetooth HID; hold or chord for a third command |
+| **Plotter** | Malayalam → G-code with real HarfBuzz shaping |
+| **Tests** | 76, run with `npm test` |
+
+### What the experiments found
+
+Eight experiments in, **the project's original hypothesis is disproved**: a hard
+akshara-legality constraint buys **0.0%**, across hand-estimated and
+corpus-measured models, at legal-set sizes from 32% to 63%, on clean input and
+under mis-presses, with decomposed units and with whole clusters.
+
+A Huffman code already gives improbable symbols long codewords, so forbidding
+them changes nothing.
+
+What survives is in [app/FINDINGS.md](app/FINDINGS.md):
+
+- **The akshara tax: 2.3×** — never measured for any Brahmic script
+- **Decompose, don't cluster: 19%** — a design recommendation with a number on it
+- **Legality is free** — it needs no corpus, so it is worth having where no corpus
+  exists, even though it adds nothing where one does
+- The negative result itself, with its information-theoretic reason
+
+Ranked by effect, every large win here belongs to someone else: prediction 57%,
+using a binary tree at all 41%, a context model 26%, the proposed constraint ~0%.
