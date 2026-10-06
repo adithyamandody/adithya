@@ -500,8 +500,11 @@ async function speak() {
   const r = await say(t, voiceSettings());
   if (!r.ok) return status(`Could not speak: ${r.why}`);
   if (r.fellBack) status(`Cloud voice failed (${r.why}) — used the device voice instead.`);
-  else status(r.cached ? 'Spoken (from cache, no network used).'
-                       : `Spoken via ${PROVIDERS[r.provider].name}.`);
+  else if (r.cached) status('Spoken (from cache, no network used).');
+  else status(`Spoken via ${PROVIDERS[r.provider].name}.`
+    + (r.level === 'experimental'
+        ? ' ⚠️ Malayalam is unofficial on this provider — judge the result yourself.'
+        : ''));
 }
 
 /* Render every quick phrase once and cache it, so the urgent things play
@@ -675,7 +678,7 @@ function wire() {
   $('#set-tap').onchange = e => { S.tap = e.target.checked; save(); };
   $('#voice-ml').onchange = e => { S.voiceFor = { ...S.voiceFor, ml: e.target.value }; save(); };
   $('#voice-en').onchange = e => { S.voiceFor = { ...S.voiceFor, en: e.target.value }; save(); };
-  for (const id of ['google', 'deepgram', 'elevenlabs'])
+  for (const id of ['google', 'deepgram', 'elevenlabs', 'grok'])
     $(`#key-${id}`).oninput = e => { S.keys = { ...S.keys, [id]: e.target.value.trim() }; save(); };
   $('#prefetch').onclick = prefetchPhrases;
   $('#cache-clear').onclick = async () => {
@@ -1046,7 +1049,7 @@ function restore() {
   $('#set-action').value = S.action || 'speak';
   $('#voice-ml').value = (S.voiceFor || {}).ml || 'system';
   $('#voice-en').value = (S.voiceFor || {}).en || 'system';
-  for (const id of ['google', 'deepgram', 'elevenlabs'])
+  for (const id of ['google', 'deepgram', 'elevenlabs', 'grok'])
     $(`#key-${id}`).value = (S.keys || {})[id] || '';
   cacheStats().then(n => {
     if (n) $('#cache-note').textContent = `${n} clips cached — these play with no network.`;

@@ -96,7 +96,16 @@ Cloud voices are an optional upgrade, set per language in Settings:
 | Device | ✓ | ✓ | Offline. No key, no cost |
 | Google Cloud TTS | ✓ | ✓ | `ml-IN-Wavenet-C`. Cheapest per character |
 | ElevenLabs | ✓ | ✓ | Most natural; multilingual model |
+| Grok (xAI) | **~** | ✓ | 20 languages incl. Hindi and Bengali — **Malayalam is not on the list**, but the model attempts unlisted ones. Experimental |
 | **Deepgram Aura** | ✗ | ✓ | **No Malayalam voice exists.** English layer only |
+
+Support has three states, not two. `✗` means the provider is refused for that
+script however the dropdown is set, because the alternative is a device that
+sounds confidently wrong. `~` means it will be used if chosen and the result is
+flagged — worth trying, not worth trusting unseen.
+
+All five are callable directly from the browser; every one returns a permissive
+CORS preflight, so no proxy is needed.
 
 **Every cloud clip is cached in IndexedDB.** A phrase is fetched once and plays
 from the device forever after — instantly, offline, at no further cost. The

@@ -48,7 +48,32 @@ export const PROVIDERS = {
     voices: { en: 'aura-2-thalia-en' },
     note: 'English only — Aura has no Malayalam voice. Used for the ABC layer.',
   },
+  grok: {
+    id: 'grok',
+    name: 'Grok (xAI)',
+    langs: ['en'],
+    /* Grok lists 20 languages including Hindi and Bengali, but NOT Malayalam.
+       Its docs say the model "is capable of generating speech in additional
+       languages beyond those listed, with varying degrees of accuracy" — so
+       Malayalam is neither supported nor refused. That is a third state, and
+       flattening it into yes/no would either throw away something that might
+       work or quietly ship a voice that mangles the language. It is offered,
+       labelled, and never chosen automatically. */
+    tryLangs: ['ml'],
+    key: 'API key',
+    voices: { en: 'eve', ml: 'eve' },
+    note: 'Officially English, Hindi, Bengali and 17 more — Malayalam is not on '
+        + 'the list but the model will attempt it. Try it and judge for yourself.',
+  },
 };
+
+/** Does this provider speak this script, and how confidently? */
+export function supportLevel(provider, lang) {
+  if (!provider) return 'no';
+  if (provider.langs.includes(lang)) return 'official';
+  if ((provider.tryLangs || []).includes(lang)) return 'experimental';
+  return 'no';
+}
 
 /** Which script is this? Routing depends on it, not on a user setting. */
 export function scriptOf(text) {
@@ -153,6 +178,24 @@ async function fetchGoogle(text, key, voice) {
   return new Blob([bytes], { type: 'audio/mpeg' });
 }
 
+async function fetchGrok(text, key, voice, lang) {
+  const r = await fetch('https://api.x.ai/v1/tts', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      text,
+      voice_id: voice,
+      /* 'auto' rather than 'ml': Malayalam is not on the supported list, and
+         asking for an unlisted code is more likely to be refused than letting
+         the model detect the script itself. */
+      language: lang === 'ml' ? 'auto' : 'en',
+      output_format: { codec: 'mp3' },
+    }),
+  });
+  if (!r.ok) throw new Error(`Grok ${r.status}: ${(await r.text()).slice(0, 120)}`);
+  return r.blob();
+}
+
 async function fetchElevenLabs(text, key, voice) {
   const r = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voice)}`,
@@ -163,7 +206,8 @@ async function fetchElevenLabs(text, key, voice) {
   return r.blob();
 }
 
-const FETCHERS = { deepgram: fetchDeepgram, google: fetchGoogle, elevenlabs: fetchElevenLabs };
+const FETCHERS = { deepgram: fetchDeepgram, google: fetchGoogle,
+                   elevenlabs: fetchElevenLabs, grok: fetchGrok };
 
 /* ── routing and playback ─────────────────────────────────────────────── */
 
@@ -172,9 +216,16 @@ export function routeFor(text, settings) {
   const lang = scriptOf(text);
   const want = (settings.voiceFor || {})[lang] || 'system';
   const p = PROVIDERS[want];
-  if (!p || !p.langs.includes(lang)) return { provider: PROVIDERS.system, lang };
-  if (p.key && !(settings.keys || {})[p.id]) return { provider: PROVIDERS.system, lang };
-  return { provider: p, lang };
+  const level = supportLevel(p, lang);
+
+  /* 'no' means the provider has no voice for this script at all. Using it
+     anyway would produce silence or confident nonsense from a device somebody
+     relies on to be understood, so fall back regardless of the setting. */
+  if (level === 'no') return { provider: PROVIDERS.system, lang, level: 'no' };
+  if (p.key && !(settings.keys || {})[p.id]) {
+    return { provider: PROVIDERS.system, lang, level: 'nokey' };
+  }
+  return { provider: p, lang, level };
 }
 
 let current = null;
@@ -209,7 +260,7 @@ export async function say(text, settings, { prefetch = false } = {}) {
   text = (text || '').trim();
   if (!text) return { ok: false, why: 'nothing to say' };
 
-  const { provider, lang } = routeFor(text, settings);
+  const { provider, lang, level } = routeFor(text, settings);
 
   if (provider.id === 'system') {
     if (prefetch) return { ok: true, provider: 'system', cached: false, prefetch: true };
@@ -228,10 +279,10 @@ export async function say(text, settings, { prefetch = false } = {}) {
   }
 
   try {
-    const blob = await FETCHERS[provider.id](text, settings.keys[provider.id], voice);
+    const blob = await FETCHERS[provider.id](text, settings.keys[provider.id], voice, lang);
     await cachePut(key, blob);
     if (!prefetch) await playBlob(blob);
-    return { ok: true, provider: provider.id, cached: false };
+    return { ok: true, provider: provider.id, cached: false, level };
   } catch (e) {
     /* Network down, key wrong, CORS refused, quota gone — it does not matter
        which. The person still needs to be heard, so fall through to the voice

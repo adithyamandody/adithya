@@ -5,7 +5,7 @@
  * would produce silence or English-accented nonsense from a device somebody
  * relies on to be understood.
  */
-import { PROVIDERS, scriptOf, routeFor } from '../voice.js';
+import { PROVIDERS, scriptOf, routeFor, supportLevel } from '../voice.js';
 
 let pass = 0, fail = 0;
 const t = (n, f) => { try { f(); pass++; console.log(`  ok   ${n}`); }
@@ -49,6 +49,35 @@ t('empty settings still route somewhere speakable', () => {
   eq(routeFor('ആദിത്യ', {}).provider.id, 'system');
 });
 
+console.log('\nthree support levels, not two');
+/* Grok lists 20 languages including Hindi and Bengali but not Malayalam, while
+   its docs say the model will attempt unlisted ones "with varying degrees of
+   accuracy". That is neither yes nor no, and flattening it either way is wrong:
+   call it no and you discard something that might work; call it yes and you
+   ship a voice that may mangle the language without telling anyone. */
+t('support is official, experimental, or no', () => {
+  eq(supportLevel(PROVIDERS.google, 'ml'), 'official');
+  eq(supportLevel(PROVIDERS.grok, 'en'), 'official');
+  eq(supportLevel(PROVIDERS.grok, 'ml'), 'experimental');
+  eq(supportLevel(PROVIDERS.deepgram, 'ml'), 'no');
+});
+
+t('an experimental provider IS used when chosen, and flagged', () => {
+  const r = routeFor('ആദിത്യ', { voiceFor: { ml: 'grok' }, keys: { grok: 'k' } });
+  eq(r.provider.id, 'grok', 'experimental support was discarded');
+  eq(r.level, 'experimental', 'used without flagging it');
+});
+
+t("a provider with NO voice for the script is refused even when chosen", () => {
+  const r = routeFor('ആദിത്യ', { voiceFor: { ml: 'deepgram' }, keys: { deepgram: 'k' } });
+  eq(r.provider.id, 'system');
+  eq(r.level, 'no');
+});
+
+t('a missing key is distinguishable from missing support', () => {
+  eq(routeFor('ആദിത്യ', { voiceFor: { ml: 'google' }, keys: {} }).level, 'nokey');
+});
+
 console.log('\nprovider table');
 t('every provider declares the languages it can actually speak', () => {
   for (const p of Object.values(PROVIDERS)) {
@@ -63,10 +92,11 @@ t('the system voice needs no key, so there is always a fallback', () => {
   eq(PROVIDERS.system.key, false);
   ok(PROVIDERS.system.langs.includes('ml') && PROVIDERS.system.langs.includes('en'));
 });
-t('every cloud provider has a voice id for each language it claims', () => {
+t('every cloud provider has a voice id for each language it claims or attempts', () => {
   for (const p of Object.values(PROVIDERS)) {
     if (!p.key) continue;
-    for (const l of p.langs) ok(p.voices && p.voices[l], `${p.id} claims ${l} but has no voice id`);
+    for (const l of [...p.langs, ...(p.tryLangs || [])])
+      ok(p.voices && p.voices[l], `${p.id} offers ${l} but has no voice id`);
   }
 });
 
