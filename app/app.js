@@ -11,6 +11,7 @@
 'use strict';
 
 import { ScanSession, simulate, decompose } from './scan.js';
+import { makeClock } from './clock.js';
 import { STEPS, sentenceFor, makeState, step as tourStep, isLast } from './tour.js';
 import { PROVIDERS, say, scriptOf, routeFor, cacheStats, cacheClear } from './voice.js';
 
@@ -18,6 +19,7 @@ const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 
 const D = { units: [], byId: {}, bigrams: {}, legal: {}, grid: null };
+const clock = makeClock(() => performance.now());
 const S = {
   buf: [],            // array of unit objects
   mode: 'B',
@@ -83,8 +85,8 @@ function startScan() {
   sess.presses = prev ? prev.presses : 0;     // running total, for display
   sess.steps = prev ? prev.steps : 0;
   sess.selPresses = 0;                        // never carried: it gates idling
-  sess.t0 = prev ? prev.t0 : performance.now();
   S.session = sess;
+  clock.run();
   sess.begin();
 }
 
@@ -104,6 +106,8 @@ function maybePause() {
 function pause(afterIdle) {
   S.paused = true;
   S.idleRuns = 0;
+  clock.hold();
+  if (S.session) S.session.stop();   // a paused scanner must not keep stepping
   $('#ask-text').innerHTML = afterIdle ? 'Paused — no input for a while.' : 'Ready when you are.';
   $('#ask-keys').innerHTML = '<b>press</b> to start';
   $('#scan').innerHTML = '<p class="idlemsg">Waiting for you. '
@@ -342,7 +346,7 @@ function paintStats() {
   if (!s) return;
   $('#s-press').textContent = s.presses;
   $('#s-step').textContent = s.steps;
-  $('#s-time').textContent = ((performance.now() - s.t0) / 1000).toFixed(1) + 's';
+  $('#s-time').textContent = (clock.ms() / 1000).toFixed(1) + 's';
   $('#s-mode').textContent = S.mode;
 }
 setInterval(paintStats, 100);          // display only — never drives the scan
@@ -1023,12 +1027,20 @@ function backspace() {
   if (!S.paused) startScan();          // the context changed, so rebuild the tree
 }
 
+/* Start over. Clearing the sentence but keeping the counters was the wrong
+   split: between two judges at a fair the text is the least of it, and the
+   second person inherited the first one's press count and timer. There was no
+   way at all to zero those, so the numbers only ever grew. This resets the
+   whole attempt and waits for a press, rather than scanning at nobody. */
 function clearAll() {
   S.buf = [];
   S.practice = null;
   $('#practice').hidden = true;
+  clock.zero();
+  if (S.session) { S.session.presses = 0; S.session.steps = 0; }
   paintText();
-  if (!S.paused) startScan();
+  paintStats();
+  pause();
 }
 
 function save() {
