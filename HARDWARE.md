@@ -188,6 +188,32 @@ button: whichever pin prints is where that button really is. Reflash
 > arbitrary slice of the bytes, which produces torn, miscounted lines — and an
 > upload will fail with *"port is busy"*. `pkill -f "arduino-cli monitor"` first.
 
+### A wedged port: pages of binary rubbish and no text
+
+The adapter can get stuck emitting a continuous stream of `80 00 00` bytes,
+tens of KB a second, with no readable line in it. Killing readers mid-read
+seems to bring it on.
+
+How to be sure that is what you are looking at, rather than a wrong baud rate:
+**read at several bauds and compare the byte counts.** A real signal read at
+the wrong rate still scales with the rate — 921600 delivers eight times what
+57600 does. A wedged adapter delivers the *same* ~35 KB/s at every setting,
+which proves the bytes are coming from the driver and not from the ESP32.
+
+```sh
+for B in 57600 115200 921600; do
+  ( (stty $B raw -echo; exec cat) < /dev/cu.usbserial-0001 > "b$B.log" & )
+  sleep 3; pkill -x cat; echo "$B -> $(wc -c < b$B.log) bytes"
+done
+```
+
+**Fix: unplug the ESP32 and plug it back in.** Nothing else reliably clears it.
+
+None of this affects the device itself. Uploading still works throughout
+(esptool verifies flash hashes at 921600), and the switches keep working over
+Bluetooth, because the serial line is only a diagnostic channel — it is not in
+the path between the switch and the tablet.
+
 ---
 
 ## Pair it with the tablet

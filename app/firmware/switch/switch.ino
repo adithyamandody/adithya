@@ -38,6 +38,14 @@ struct Switch {
    before trusting any number. */
 const uint16_t DEBOUNCE = 25;
 
+/* Whether a host is connected is invisible otherwise, and that costs real
+   time: a switch that works perfectly on the wire looks identical to a dead
+   one if the tablet silently dropped the link. So report the transition. A
+   BLE HID device also stops advertising once a host connects, which means a
+   second machine cannot pair until the first one lets go — the one line below
+   is what tells you which case you are in. */
+bool wasConnected = false;
+
 Switch SW[] = {
   { 4, ' ',            "select",    HIGH, 0 },
   { 5, KEY_BACKSPACE,  "backspace", HIGH, 0 },
@@ -48,10 +56,20 @@ void setup() {
   Serial.begin(115200);
   for (uint8_t i = 0; i < N; i++) pinMode(SW[i].pin, INPUT_PULLUP);
   ble.begin();
+  /* Printed within milliseconds of reset, so a serial monitor attached
+     afterwards will usually miss it. That is not a fault — the press lines and
+     the connect/disconnect lines above are the ones to watch for. */
   Serial.println("AksharaScan: advertising, 2 switches");
 }
 
 void loop() {
+  bool conn = ble.isConnected();
+  if (conn != wasConnected) {
+    wasConnected = conn;
+    Serial.println(conn ? "host connected — keys will be sent"
+                        : "host disconnected — advertising again");
+  }
+
   for (uint8_t i = 0; i < N; i++) {
     bool now = digitalRead(SW[i].pin);
     if (now != SW[i].last && millis() - SW[i].tLast > DEBOUNCE) {
