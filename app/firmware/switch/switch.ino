@@ -20,7 +20,7 @@
  * Library: ESP32-BLE-Keyboard or HijelHID_BLEKeyboard (both NimBLE).
  * Android pairs with "Just Works" — no PIN.
  */
-#include <BleKeyboard.h>
+#include <BleKeyboard.h>   // library: "ESP32 HID Keyboard" (Arduino Library Manager)
 
 BleKeyboard ble("AksharaScan Switch", "AksharaScan", 100);
 

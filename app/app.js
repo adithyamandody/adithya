@@ -702,7 +702,11 @@ function firstRun() {
   try { return !localStorage.getItem('aksharascan-seen'); } catch (_) { return true; }
 }
 
-const SPEEDS = [400, 600, 800, 1200, 1500, 2000, 2500, 3000];
+/* Down to 400 ms for someone practised, out to 6000 for someone who is not —
+   or who is tired, or newly injured. Scan speed is the single setting most
+   likely to make the difference between a usable device and an abandoned
+   one, so the slow end matters more than the fast end. */
+const SPEEDS = [400, 600, 800, 1200, 1500, 2000, 2500, 3000, 4000, 5000, 6000];
 
 /* ── word prediction (BUILD.md condition C5) ─────────────────────────────
  * 17 units for "എന്റെ പേര് ആദിത്യ" is 77 scan steps — two and a half minutes.

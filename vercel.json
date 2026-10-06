@@ -40,5 +40,17 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/apk",
+      "destination": "https://github.com/adithyamandody/adithya/releases/latest/download/AksharaScan.apk",
+      "permanent": false
+    },
+    {
+      "source": "/setup",
+      "destination": "https://github.com/adithyamandody/adithya/blob/main/SETUP.md",
+      "permanent": false
+    }
   ]
 }
