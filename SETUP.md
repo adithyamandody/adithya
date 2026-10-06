@@ -63,16 +63,24 @@ zero**. Better to find that out now.
 
 ## 5. Flash the ESP32
 
-On the laptop, in the **Arduino IDE**:
+Plug the ESP32 into the Mac with a **data** USB cable, then from this repo:
 
-1. **Boards:** Tools → Board → Boards Manager → install **esp32** (Espressif)
-2. **Library:** Tools → Manage Libraries → install **ESP32 BLE Keyboard**
-3. Open `app/firmware/switch/switch.ino` from this repo
-4. Select your board (usually *ESP32 Dev Module*) and the port
-5. Upload
+```sh
+./flash.sh
+```
 
-Open the Serial Monitor at **115200**. It should print
+That installs whatever is missing, finds the board, uploads, and opens the
+serial output so you can test the buttons straight away. It should print
 `AksharaScan: advertising, 2 switches`.
+
+> **The library is `ESP32 HID Keyboard`.** Not *ESP32 BLE Keyboard*, which this
+> file used to say — that one is absent from the Arduino registry and fails to
+> build against ESP32 core 3.x. The two expose the same `BleKeyboard` class, so
+> the sketch is unchanged. `flash.sh` installs the right one.
+
+Prefer the Arduino IDE? Install the **esp32** boards package (Espressif) and the
+**ESP32 HID Keyboard** library, open `app/firmware/switch/switch.ino`, pick
+*ESP32 Dev Module* and the port, and upload. Serial Monitor at **115200**.
 
 > The sketch sends `press()`/`release()`, not a one-shot keystroke. Without real
 > key state the tablet cannot tell a tap from a hold, so **holds and chords will

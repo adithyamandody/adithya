@@ -41,6 +41,20 @@ is the mistake almost everyone makes once.
 
 ---
 
+## The second trap: four pins that cannot work
+
+**GPIO 34, 35, 36 and 39 are input-only and have no internal pull-up.**
+`INPUT_PULLUP` silently does nothing on them, so the pin floats and reads
+whatever noise is nearby — it looks like a button mashing itself. Button 2 was
+wired to GPIO 35 here and logged 269 phantom transitions before anyone touched
+it. No amount of rewiring fixes it; the pin is the problem.
+
+Safe pins for a switch: **4, 5, 13, 14, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27,
+32, 33**. Avoid 0, 2, 12 and 15 as well — they are strapping pins and can stop
+the board booting. GPIO 4 and 5 below are chosen from the safe list.
+
+---
+
 ## The wiring
 
 Two wires per button. That is all.
@@ -122,8 +136,29 @@ sentence. A one-shot keystroke could not express it.
 |---|---|
 | Nothing on press | Wrong pins — you likely used a pair that is already joined. Go diagonal |
 | `down` and never `up` | A pair is permanently joined, or a wire is shorted to GND |
+| `down` at boot, untouched | Same thing: the button is wired across a joined pair |
+| Lines with nobody pressing | You are on GPIO 34/35/36/39. Move to a safe pin — see above |
 | Constant stream of lines | Contact bounce — raise `DEBOUNCE` in the sketch |
 | `backspace` when you press select | GPIO 4 and 5 are swapped |
+
+### When a switch does nothing and you cannot tell why
+
+A pin at rest looks **identical** whether the button is correctly wired and
+unpressed or not connected at all. Static inspection cannot separate those two,
+so do not try — flash the pin finder, which watches every usable GPIO at once:
+
+```sh
+arduino-cli compile --fqbn esp32:esp32:esp32 app/firmware/pinfinder
+arduino-cli upload -p /dev/cu.usbserial-0001 --fqbn esp32:esp32:esp32 app/firmware/pinfinder
+```
+
+At boot it lists any pin already LOW — each one is stuck closed. Then press a
+button: whichever pin prints is where that button really is. Reflash
+`app/firmware/switch` when you are done.
+
+> **Use one serial reader at a time.** Two processes on the same port each get an
+> arbitrary slice of the bytes, which produces torn, miscounted lines — and an
+> upload will fail with *"port is busy"*. `pkill -f "arduino-cli monitor"` first.
 
 ---
 

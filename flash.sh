@@ -46,7 +46,13 @@ say "2. Finding the board"
 # native-USB chips (S2/S3/C3) as cu.usbmodem.
 PORT="${1:-}"
 if [ -z "$PORT" ]; then
-  PORT=$(ls /dev/cu.usbserial-* /dev/cu.wchusbserial* /dev/cu.SLAB_USBtoUART* /dev/cu.usbmodem* 2>/dev/null | head -1 || true)
+  # Check each pattern separately and test existence. A combined glob is
+  # fragile: zsh ABORTS the whole command on any unmatched pattern rather than
+  # skipping it, so one missing board type hid a board that was plugged in.
+  for p in /dev/cu.usbserial-* /dev/cu.wchusbserial-* /dev/cu.SLAB_USBtoUART* /dev/cu.usbmodem*; do
+    [ -e "$p" ] || continue
+    PORT="$p"; break
+  done
 fi
 
 if [ -z "$PORT" ]; then
