@@ -1,8 +1,28 @@
 # Wiring the switches
 
-What you have: an **ESP32**, two **4-pin push buttons**, a **USB cable**, a **Mac**.
-That is everything needed. No Arduino board, no resistors, no breadboard
-strictly required.
+What you have: an **ESP32**, two **4-pin push buttons**, a **USB cable**, and a
+computer (**Mac or Windows**). That is everything needed. No Arduino board, no
+resistors, no breadboard strictly required.
+
+---
+
+## How the pieces actually connect
+
+```
+   laptop ──USB (5 V power)──> ESP32 ──Bluetooth HID──> tablet (runs the app)
+```
+
+The laptop is only a **power supply and a flashing tool**. Switch presses never
+go through it — they travel over Bluetooth straight to the tablet.
+
+Two consequences worth knowing:
+
+- **The firmware stays in the ESP32's flash across power cycles.** Once flashed,
+  any 5 V source will do: a laptop port, a phone charger, a USB power bank. For
+  the fair table a power bank is the better answer — one less thing to boot.
+- **Pair the ESP32 with the tablet only.** A BLE HID device bonds to one host,
+  and you do not want a laptop grabbing it mid-demo. Plugging into a laptop for
+  power creates no pairing, so that is safe.
 
 ---
 
@@ -86,14 +106,21 @@ GPIO and the other to GND.
 
 ## Flash it
 
-Plug the ESP32 into the Mac with the USB cable, then:
+Plug the ESP32 into the computer with the USB cable, then:
 
 ```sh
-./flash.sh
+./flash.sh        # macOS or Linux
 ```
 
-It installs anything missing, finds the board, uploads, and then shows the
-serial output so you can test the buttons immediately.
+```powershell
+.\flash.ps1       # Windows
+```
+
+Either one installs anything missing, finds the board, uploads, and then shows
+the serial output so you can test the buttons immediately.
+
+You only need this to flash the board the **first** time, or after the sketch
+changes. To merely use the switches, the ESP32 needs nothing but 5 V.
 
 ### If it says "No ESP32 found"
 
@@ -103,8 +130,9 @@ In order of likelihood:
    and such cables look identical to data cables. Try another one.
 2. **No light on the board** — no power at all.
 3. **Missing driver.** Look at the small square chip near the USB socket:
-   - **CH340** → `brew install --cask wch-ch34x-usb-serial-driver`, then reboot
-   - **CP2102** → macOS already supports this
+   - **CH340**, macOS → `brew install --cask wch-ch34x-usb-serial-driver`, reboot
+   - **CH340**, Windows → [CH341SER from WCH](https://www.wch-ic.com/downloads/CH341SER_EXE.html)
+   - **CP2102** → macOS supports this already; Windows wants Silicon Labs' VCP driver
 
 ### If it stalls at "Connecting…"
 

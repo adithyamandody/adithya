@@ -63,15 +63,24 @@ zero**. Better to find that out now.
 
 ## 5. Flash the ESP32
 
-Plug the ESP32 into the Mac with a **data** USB cable, then from this repo:
+Plug the ESP32 into the laptop with a **data** USB cable, then from this repo:
 
 ```sh
-./flash.sh
+./flash.sh        # macOS or Linux
+```
+
+```powershell
+.\flash.ps1       # Windows
 ```
 
 That installs whatever is missing, finds the board, uploads, and opens the
 serial output so you can test the buttons straight away. It should print
-`AksharaScan: advertising, 2 switches`.
+`AksharaScan: advertising, 2 switches` — though the banner appears within
+milliseconds of reset, so missing it is normal. The press lines are what matter.
+
+**This is a one-off.** The firmware stays in the ESP32's flash, so from then on
+the board needs nothing but 5 V — laptop port, phone charger or power bank. The
+laptop is not in the signal path at all; presses go over Bluetooth to the tablet.
 
 > **The library is `ESP32 HID Keyboard`.** Not *ESP32 BLE Keyboard*, which this
 > file used to say — that one is absent from the Arduino registry and fails to
@@ -108,6 +117,13 @@ On the tablet: **Settings → Bluetooth → AksharaScan Switch → Pair.**
 
 No PIN; it pairs with "Just Works". It appears as a **keyboard**, which is the
 point — the switches then work in every app on the tablet, not only this one.
+
+**Pair the tablet and nothing else.** A BLE HID device bonds to one host, so a
+laptop that has also paired with it can steal the connection mid-demo. Using a
+laptop purely for power is fine — that creates no pairing.
+
+Then power-cycle the ESP32 and check it reconnects to the tablet **on its own**.
+It should, and if it does not you want to know now rather than at the table.
 
 ---
 
