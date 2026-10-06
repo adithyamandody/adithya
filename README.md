@@ -73,10 +73,10 @@ that means for the derived data files, in [NOTICE.md](NOTICE.md).
 | **Model** | Measured from 113,324 units of real Malayalam, not hand-estimated |
 | **Scanning** | Three layers (Malayalam, 123, ABC), all reachable by switch alone |
 | **Prediction** | Word completion and next-word, learned from use |
-| **Speech** | Device voice offline; five cloud providers, cached so they work offline after one fetch |
+| **Speech** | Device voice offline — native Android TTS in the APK, Web Speech in the browser; five cloud providers, cached so they work offline after one fetch |
 | **Switch** | Two-switch ESP32 over Bluetooth HID; hold or chord for a third command |
 | **Plotter** | Malayalam → G-code with real HarfBuzz shaping |
-| **Tests** | 124, run with `npm test` |
+| **Tests** | 131, run with `npm test` |
 
 ### What the experiments found
 

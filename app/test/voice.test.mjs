@@ -5,7 +5,7 @@
  * would produce silence or English-accented nonsense from a device somebody
  * relies on to be understood.
  */
-import { PROVIDERS, scriptOf, routeFor, supportLevel, describeVoices } from '../voice.js';
+import { PROVIDERS, scriptOf, routeFor, supportLevel, describeVoices, pickBackend, BCP47 } from '../voice.js';
 
 let pass = 0, fail = 0;
 const t = (n, f) => { try { f(); pass++; console.log(`  ok   ${n}`); }
@@ -234,6 +234,54 @@ t('a missing localService is assumed on-device', () => {
 
 t('a voice with no name does not blank the report', () => {
   eq(describeVoices([{ lang: 'ml-IN' }]).ml[0].name, '(unnamed)');
+});
+
+
+/* ── which door to the device voice ───────────────────────────────────────
+ * Android's System WebView does not expose window.speechSynthesis, so inside
+ * the APK the Web Speech API is absent and the app threw "no speech synthesis
+ * on this device" no matter how many voices were installed. Chrome for Android
+ * has it. Same tablet, same voices, different result — so the choice of
+ * backend decides whether the app can speak at all, and it is worth pinning.
+ */
+t('a plain browser with speech uses the Web Speech API', () => {
+  eq(pickBackend({ speechSynthesis: {} }), 'web');
+});
+
+t('a browser without speech has no route', () => {
+  eq(pickBackend({}), 'none');
+  eq(pickBackend(null), 'none');
+  eq(pickBackend(undefined), 'none');
+});
+
+/* The case that was broken: native shell, no Web Speech API. */
+t('the APK uses the native plugin even with no speechSynthesis', () => {
+  const win = { Capacitor: { isNativePlatform: () => true } };
+  eq(pickBackend(win), 'native', 'the APK must not fall back to a missing Web Speech API');
+});
+
+t('native wins over Web Speech when both look available', () => {
+  const win = { speechSynthesis: {}, Capacitor: { isNativePlatform: () => true } };
+  eq(pickBackend(win), 'native', 'native voices are the ones the user installed');
+});
+
+/* A Capacitor web build carries the global but is not native. Reading
+   presence as nativeness would route browser users at a plugin that is not
+   there. */
+t('a Capacitor global alone does not mean native', () => {
+  const win = { speechSynthesis: {}, Capacitor: { isNativePlatform: () => false } };
+  eq(pickBackend(win), 'web');
+});
+
+t('a bridge without isNativePlatform is trusted if the plugin is registered', () => {
+  eq(pickBackend({ Capacitor: { Plugins: { TextToSpeech: {} } } }), 'native');
+  eq(pickBackend({ Capacitor: { Plugins: {} } }), 'none');
+});
+
+/* Android wants a BCP 47 tag, not the two-letter code used internally. */
+t('language codes map to BCP 47 tags Android accepts', () => {
+  eq(BCP47.ml, 'ml-IN');
+  eq(BCP47.en, 'en-IN');
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

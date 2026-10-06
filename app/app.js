@@ -14,7 +14,7 @@ import { ScanSession, simulate, decompose } from './scan.js';
 import { makeClock } from './clock.js';
 import { STEPS, sentenceFor, makeState, step as tourStep, isLast } from './tour.js';
 import { PROVIDERS, say, scriptOf, routeFor, cacheStats, cacheClear,
-         listVoices, describeVoices } from './voice.js';
+         listVoices, describeVoices, pickBackend, openVoiceInstall } from './voice.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -682,6 +682,13 @@ function wire() {
   $('#set-audio').onchange = e => { S.audio = e.target.checked; save(); };
   $('#set-tap').onchange = e => { S.tap = e.target.checked; save(); };
   $('#voice-scan').onclick = voiceScan;
+  $('#voice-install').onclick = async () => {
+    if (!(await openVoiceInstall())) {
+      $('#voice-report').innerHTML =
+        'Could not open it from here. In <b>Settings</b>, search '
+        + '<b>text-to-speech</b> — it is not under Accessibility on every tablet.';
+    }
+  };
   $('#voice-ml').onchange = e => { S.voiceFor = { ...S.voiceFor, ml: e.target.value }; save(); };
   $('#voice-en').onchange = e => { S.voiceFor = { ...S.voiceFor, en: e.target.value }; save(); };
   for (const id of ['google', 'deepgram', 'elevenlabs', 'groq', 'grok'])
@@ -1053,6 +1060,10 @@ async function voiceScan() {
   const out = $('#voice-report');
   out.textContent = 'Checking…';
   const d = describeVoices(await listVoices());
+  const backend = pickBackend(window);
+
+  /* Only the native plugin can open Android's install screen. */
+  $('#voice-install').hidden = backend !== 'native';
 
   const list = v => v.map(x => `${x.lang} ${x.name}${x.local ? '' : ' (needs network)'}`).join('<br>');
   const head = {
@@ -1067,7 +1078,15 @@ async function voiceScan() {
     'ok': '<b class="good">Malayalam voice found, and it works offline.</b>',
   }[d.verdict];
 
+  /* Name the door as well as the voices. Android's System WebView has no
+     window.speechSynthesis, so the browser and the APK genuinely differ and
+     "it works on mine" is a real conversation otherwise. */
+  const door = { native: 'native Android speech (APK)',
+                 web: 'browser speech (Web Speech API)',
+                 none: 'no speech route at all' }[backend];
+
   out.innerHTML = `${head}<br><br>`
+    + `Route: <b>${door}</b><br>`
     + `<b>${d.total}</b> voices on this device · `
     + `<b>${d.ml.length}</b> Malayalam · <b>${d.en.length}</b> English`
     + (d.ml.length ? `<br><br><b>Malayalam:</b><br>${list(d.ml)}` : '')

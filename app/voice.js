@@ -115,10 +115,25 @@ export function supportLevel(provider, lang) {
 /** getVoices() is empty on the first call in Chrome and fills in later, so a
  *  naive check reports "no voices" on a tablet that has plenty. Wait for the
  *  event, with a timeout for the engines that never fire it. */
-export function listVoices(timeout = 1500) {
+export async function listVoices(timeout = 1500) {
+  const win = typeof window !== 'undefined' ? window : null;
+
+  /* In the APK the voices live behind the native plugin, not in the WebView.
+     Asking speechSynthesis there returns nothing and the report would say
+     "no engine" on a tablet with Malayalam installed. */
+  if (pickBackend(win) === 'native') {
+    const tts = nativeTTS(win);
+    if (tts && typeof tts.getSupportedVoices === 'function') {
+      try {
+        const r = await tts.getSupportedVoices();
+        return (r && r.voices) || [];
+      } catch { /* fall through to the web path below */ }
+    }
+  }
+
   return new Promise(resolve => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return resolve([]);
-    const synth = window.speechSynthesis;
+    if (!win || !('speechSynthesis' in win)) return resolve([]);
+    const synth = win.speechSynthesis;
     const first = synth.getVoices();
     if (first && first.length) return resolve(first);
 
@@ -342,15 +357,82 @@ function playBlob(blob) {
   });
 }
 
-function speakSystem(text, lang) {
-  if (!('speechSynthesis' in window)) throw new Error('no speech synthesis on this device');
+/* ── two ways to reach the device voice ───────────────────────────────────
+ * Android's System WebView does not expose window.speechSynthesis, so inside
+ * the Capacitor APK the Web Speech API simply is not there and the app threw
+ * "no speech synthesis on this device" however many voices were installed.
+ * Chrome for Android has it; the WebView the APK runs in does not.
+ *
+ * Android's NATIVE text-to-speech does have the voices, so reach that through
+ * @capacitor-community/text-to-speech instead and keep the Web Speech API for
+ * the browser. Same device voice, two different doors.
+ */
+
+/** Which door is open? Pure, so the choice is tested without a device. */
+export function pickBackend(win) {
+  const cap = win && win.Capacitor;
+  if (cap) {
+    /* Trust Capacitor's own answer. A plain browser can also carry a
+       Capacitor global, so presence alone must not imply native. */
+    const native = typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : false;
+    if (native) return 'native';
+  }
+  if (win && 'speechSynthesis' in win) return 'web';
+  /* Native bridge present but isNativePlatform missing: believe the plugin. */
+  if (cap && cap.Plugins && cap.Plugins.TextToSpeech) return 'native';
+  return 'none';
+}
+
+/** The native plugin, by either access path. There is no bundler here, so the
+ *  npm import is unavailable in the browser; Capacitor exposes native plugins
+ *  on the bridge global instead. */
+function nativeTTS(win = typeof window !== 'undefined' ? window : null) {
+  const cap = win && win.Capacitor;
+  if (!cap) return null;
+  if (cap.Plugins && cap.Plugins.TextToSpeech) return cap.Plugins.TextToSpeech;
+  if (typeof cap.registerPlugin === 'function') {
+    try { return cap.registerPlugin('TextToSpeech'); } catch { return null; }
+  }
+  return null;
+}
+
+export const BCP47 = { ml: 'ml-IN', en: 'en-IN' };
+
+/** Open Android's voice-data screen. Finding it by hand depends on the brand
+ *  and it is not under Accessibility on every tablet, so let the OS do it. */
+export async function openVoiceInstall() {
+  const tts = nativeTTS();
+  if (!tts || typeof tts.openInstall !== 'function') return false;
+  try { await tts.openInstall(); return true; } catch { return false; }
+}
+
+async function speakNative(text, lang) {
+  const tts = nativeTTS();
+  if (!tts) throw new Error('native speech plugin not available');
+  await tts.stop().catch(() => {});       // cut off whatever is mid-sentence
+  await tts.speak({ text, lang: BCP47[lang] || BCP47.ml, rate: 1, pitch: 1, volume: 1 });
+  return { provider: 'system', cached: false, voice: BCP47[lang] || BCP47.ml, backend: 'native' };
+}
+
+function speakWeb(text, lang) {
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang === 'en' ? 'en-IN' : 'ml-IN';
+  u.lang = BCP47[lang] || BCP47.ml;
   const v = speechSynthesis.getVoices().find(x => x.lang.toLowerCase().startsWith(lang === 'en' ? 'en' : 'ml'));
   if (v) u.voice = v;
   speechSynthesis.speak(u);
-  return { provider: 'system', cached: false, voice: v ? v.name : null };
+  return { provider: 'system', cached: false, voice: v ? v.name : null, backend: 'web' };
+}
+
+async function speakSystem(text, lang) {
+  switch (pickBackend(typeof window !== 'undefined' ? window : null)) {
+    case 'native': return speakNative(text, lang);
+    case 'web':    return speakWeb(text, lang);
+    default:
+      throw new Error('this build cannot reach the device voice — open the web '
+                    + 'app in Chrome, or install the APK that includes the '
+                    + 'native speech plugin');
+  }
 }
 
 /**
@@ -365,7 +447,7 @@ export async function say(text, settings, { prefetch = false } = {}) {
 
   if (provider.id === 'system') {
     if (prefetch) return { ok: true, provider: 'system', cached: false, prefetch: true };
-    try { return { ok: true, ...speakSystem(text, lang) }; }
+    try { return { ok: true, ...(await speakSystem(text, lang)) }; }
     catch (e) { return { ok: false, why: e.message }; }
   }
 
@@ -390,7 +472,7 @@ export async function say(text, settings, { prefetch = false } = {}) {
        that cannot fail. */
     if (prefetch) return { ok: false, why: e.message, provider: provider.id };
     try {
-      const r = speakSystem(text, lang);
+      const r = await speakSystem(text, lang);
       return { ok: true, ...r, fellBack: true, why: e.message };
     } catch (e2) {
       return { ok: false, why: `${e.message}; and no system voice (${e2.message})` };
