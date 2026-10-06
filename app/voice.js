@@ -32,13 +32,27 @@ export const PROVIDERS = {
     voices: { ml: 'ml-IN-Wavenet-C', en: 'en-IN-Wavenet-D' },
     note: 'Has real Malayalam voices (ml-IN-Wavenet-C / D). Cheapest per character.',
   },
+  /* Declared English-official and Malayalam-EXPERIMENTAL, which is a
+     correction. This claimed official Malayalam while calling
+     eleven_multilingual_v2, and that model's 29 languages include Tamil but
+     NOT Malayalam. The declaration is what routeFor trusts, so the mismatch
+     disabled the very guard meant to stop a provider speaking a script it
+     cannot — the same three-state problem as Grok, so treat it the same way:
+     offer it, label it, never choose it automatically.
+
+     ElevenLabs' later v3 model does list Malayalam. Switching would need the
+     model id and its availability checked against their current docs, so it
+     is deliberately not done blind here. */
   elevenlabs: {
     id: 'elevenlabs',
-    name: 'ElevenLabs',
-    langs: ['ml', 'en'],
+    name: 'ElevenLabs (experimental Malayalam)',
+    langs: ['en'],
+    tryLangs: ['ml'],
     key: 'API key',
+    model: 'eleven_multilingual_v2',
     voices: { ml: 'JBFqnCBsd6RMkjVDRZzb', en: 'JBFqnCBsd6RMkjVDRZzb' },
-    note: 'Most natural sounding; multilingual model covers Malayalam.',
+    note: 'Most natural sounding in English. Malayalam is not among this '
+        + "model's 29 languages — it will attempt it, so judge the result.",
   },
   deepgram: {
     id: 'deepgram',
@@ -90,6 +104,58 @@ export function supportLevel(provider, lang) {
   if (provider.langs.includes(lang)) return 'official';
   if ((provider.tryLangs || []).includes(lang)) return 'experimental';
   return 'no';
+}
+
+/* ── what can this device actually say? ───────────────────────────────────
+ * Finding Android's text-to-speech screen depends on brand and version, and a
+ * missing Malayalam voice is the failure that silences a demo. So rather than
+ * sending someone hunting through Settings, ask the device.
+ */
+
+/** getVoices() is empty on the first call in Chrome and fills in later, so a
+ *  naive check reports "no voices" on a tablet that has plenty. Wait for the
+ *  event, with a timeout for the engines that never fire it. */
+export function listVoices(timeout = 1500) {
+  return new Promise(resolve => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return resolve([]);
+    const synth = window.speechSynthesis;
+    const first = synth.getVoices();
+    if (first && first.length) return resolve(first);
+
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve(synth.getVoices() || []);
+    };
+    synth.addEventListener?.('voiceschanged', finish, { once: true });
+    setTimeout(finish, timeout);
+  });
+}
+
+/** Classify a voice list. Pure, so it is tested without a browser.
+ *
+ *  `local` matters as much as presence: a voice that only exists as a network
+ *  voice goes silent in aeroplane mode, which is the condition at the venue. */
+export function describeVoices(voices) {
+  const all = (voices || []).map(v => ({
+    name: v.name || '(unnamed)',
+    lang: String(v.lang || '').replace(/_/g, '-'),
+    local: v.localService !== false,          // absent means assume on-device
+  }));
+  const of = re => all.filter(v => re.test(v.lang));
+  const ml = of(/^ml(-|$)/i);
+  const en = of(/^en(-|$)/i);
+  const offlineMl = ml.filter(v => v.local);
+
+  const verdict = all.length === 0        ? 'no-engine'
+                : ml.length === 0         ? 'no-malayalam'
+                : offlineMl.length === 0  ? 'malayalam-needs-network'
+                : 'ok';
+
+  return { total: all.length, all, ml, en, offlineMl,
+           hasMalayalam: ml.length > 0, hasOfflineMalayalam: offlineMl.length > 0,
+           verdict };
 }
 
 /** Which script is this? Routing depends on it, not on a user setting. */
@@ -229,11 +295,14 @@ async function fetchGroq(text, key, voice) {
 }
 
 async function fetchElevenLabs(text, key, voice) {
+  /* Read the model from the provider entry rather than repeating it here:
+     the declared language support is only meaningful if it describes the
+     model actually called, and two copies of a model id drift. */
   const r = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voice)}`,
     { method: 'POST',
       headers: { 'xi-api-key': key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, model_id: 'eleven_multilingual_v2' }) });
+      body: JSON.stringify({ text, model_id: PROVIDERS.elevenlabs.model }) });
   if (!r.ok) throw new Error(`ElevenLabs ${r.status}: ${(await r.text()).slice(0, 120)}`);
   return r.blob();
 }

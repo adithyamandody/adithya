@@ -13,7 +13,8 @@
 import { ScanSession, simulate, decompose } from './scan.js';
 import { makeClock } from './clock.js';
 import { STEPS, sentenceFor, makeState, step as tourStep, isLast } from './tour.js';
-import { PROVIDERS, say, scriptOf, routeFor, cacheStats, cacheClear } from './voice.js';
+import { PROVIDERS, say, scriptOf, routeFor, cacheStats, cacheClear,
+         listVoices, describeVoices } from './voice.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -680,6 +681,7 @@ function wire() {
   $('#set-mode').onchange = e => { S.mode = e.target.value; save(); startScan(); };
   $('#set-audio').onchange = e => { S.audio = e.target.checked; save(); };
   $('#set-tap').onchange = e => { S.tap = e.target.checked; save(); };
+  $('#voice-scan').onclick = voiceScan;
   $('#voice-ml').onchange = e => { S.voiceFor = { ...S.voiceFor, ml: e.target.value }; save(); };
   $('#voice-en').onchange = e => { S.voiceFor = { ...S.voiceFor, en: e.target.value }; save(); };
   for (const id of ['google', 'deepgram', 'elevenlabs', 'groq', 'grok'])
@@ -1041,6 +1043,38 @@ function clearAll() {
   paintText();
   paintStats();
   pause();
+}
+
+/* Report what the tablet can actually say, and what to do about it. Written
+   for someone standing in front of a tablet, not reading code — so it names
+   the Settings search box, because the text-to-speech screen sits in a
+   different place on every brand. */
+async function voiceScan() {
+  const out = $('#voice-report');
+  out.textContent = 'Checking…';
+  const d = describeVoices(await listVoices());
+
+  const list = v => v.map(x => `${x.lang} ${x.name}${x.local ? '' : ' (needs network)'}`).join('<br>');
+  const head = {
+    'no-engine': '<b class="bad">No speech engine at all.</b> '
+      + 'Install <b>Speech Recognition &amp; Synthesis</b> (Google) from the Play Store.',
+    'no-malayalam': '<b class="bad">No Malayalam voice installed.</b> '
+      + 'Open <b>Settings</b>, search <b>text-to-speech</b>, choose <b>Google '
+      + 'Text-to-speech</b> → <b>Install voice data</b> → <b>Malayalam</b>.',
+    'malayalam-needs-network': '<b class="bad">Malayalam only as a network voice.</b> '
+      + 'It will go silent in aeroplane mode. Install the offline voice data, '
+      + 'or set a cloud provider and pre-cache the phrases.',
+    'ok': '<b class="good">Malayalam voice found, and it works offline.</b>',
+  }[d.verdict];
+
+  out.innerHTML = `${head}<br><br>`
+    + `<b>${d.total}</b> voices on this device · `
+    + `<b>${d.ml.length}</b> Malayalam · <b>${d.en.length}</b> English`
+    + (d.ml.length ? `<br><br><b>Malayalam:</b><br>${list(d.ml)}` : '')
+    + (d.verdict === 'ok'
+        ? ''
+        : '<br><br>Until that is fixed the app still types and still works — '
+        + 'it simply cannot speak Malayalam aloud.');
 }
 
 function save() {

@@ -177,11 +177,20 @@
      everything. A cloud voice sounds better but needs a network — so every
      clip is cached after the first fetch and plays offline from then on.</p>
 
+  <!-- Hunting for Android's text-to-speech screen is brand-specific and the
+       setting moves between versions, so let the device answer directly. This
+       is also the check that matters before a fair: silence on the day is the
+       failure that scores zero, and it comes from a missing voice. -->
+  <div id="voice-check">
+    <button id="voice-scan" class="ghost">Check this device's voices</button>
+    <div id="voice-report" class="muted"></div>
+  </div>
+
   <label>Malayalam voice
     <select id="voice-ml">
       <option value="system" selected>Device voice — offline</option>
       <option value="google">Google Cloud TTS — ml-IN-Wavenet-C</option>
-      <option value="elevenlabs">ElevenLabs — multilingual</option>
+      <option value="elevenlabs">ElevenLabs — experimental for Malayalam</option>
       <option value="grok">Grok — xAI, experimental for Malayalam</option>
     </select>
   </label>

@@ -76,7 +76,7 @@ that means for the derived data files, in [NOTICE.md](NOTICE.md).
 | **Speech** | Device voice offline; five cloud providers, cached so they work offline after one fetch |
 | **Switch** | Two-switch ESP32 over Bluetooth HID; hold or chord for a third command |
 | **Plotter** | Malayalam → G-code with real HarfBuzz shaping |
-| **Tests** | 110, run with `npm test` |
+| **Tests** | 124, run with `npm test` |
 
 ### What the experiments found
 
