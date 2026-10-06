@@ -23,3 +23,5 @@ android/capacitor-cordova-android-plugins/
 # but keep the native project source
 !android/app/src/
 .vercel
+app/server/out/
+.venv/

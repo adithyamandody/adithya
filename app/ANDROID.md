@@ -113,6 +113,53 @@ the failure would be a device that sounds confidently wrong.
 ⚠️ API keys live on the device and are readable by anyone who can open its
 browser tools. Use a key restricted to text-to-speech with a spending cap.
 
+## The plotter
+
+A 3D printer with a pen where the hotend was.
+
+```sh
+python3 -m venv .venv
+.venv/bin/pip install -r app/server/requirements.txt
+
+# test the whole path with no hardware at all
+.venv/bin/python app/server/serve.py --dry-run
+
+# with a printer attached
+.venv/bin/python app/server/serve.py --port /dev/tty.usbserial-0001
+```
+
+Set the server address in the app under Settings → Plotter server, then use
+**Preview** before **Write**. Preview draws exactly what the pen will draw.
+Shaping errors are obvious on screen and completely invisible in G-code, and a
+bad plot costs ninety seconds and a sheet of paper.
+
+### Why this runs on the laptop
+
+Malayalam needs complex text **shaping**: ക + ് + യ is one conjunct ക്യ, not
+three glyphs in a row, and the vowel sign െ is stored after its consonant but
+drawn before it. Only a real shaping engine gets this right, so HarfBuzz does it
+here and the printer just follows coordinates. The ESP32 cannot do it and
+neither can the browser.
+
+Verified on <span lang="ml">ഞാൻ ആദിത്യ, എനിക്ക് 25 വയസ്സ്</span>: the chillu ൻ,
+the conjunct ത്യ, the geminate ക്ക and the final സ്സ് cluster all form
+correctly — 35 contours, 199 mm wide, 1,148 mm of pen travel.
+
+### Mechanical notes
+
+* Pen up/down is a Z move: `Z5` up, `Z0` down. Spring-load the holder so bed
+  warp does not change pen pressure.
+* **Never command the heater.** Marlin's thermal runaway protection is mandatory
+  and must not be patched out. An unheated hotend with its thermistor still
+  attached reads ambient and never trips, so there is nothing to disable.
+* Tape the paper down. A sheet that shifts ruins a ninety-second plot.
+* G-code is streamed line by line, waiting for each `ok`. Streaming without
+  waiting overruns the firmware buffer and the plot silently loses moves — a
+  failure that looks like a bad font.
+* Letters come out as **outlines**, because a normal font gives the boundary of
+  each glyph rather than a single stroke. It is legible and reads as deliberate.
+  Single-stroke Malayalam fonts essentially do not exist.
+
 ## Before a fair
 
 1. `npm test` — 37 tests must pass.

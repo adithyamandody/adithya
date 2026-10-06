@@ -525,6 +525,30 @@ async function prefetchPhrases() {
     + `${n} clips cached — these now play with no network.`;
 }
 
+/* Look before you plot. A bad plot costs ninety seconds and a sheet of paper,
+   and shaping errors are obvious on screen but invisible in G-code. */
+async function preview() {
+  const t = text();
+  if (!t) return status('Nothing to preview.');
+  if (!S.server) return status('No plotter server set — Settings → Plotter server.');
+  status('Rendering…');
+  try {
+    const r = await fetch(S.server.replace(/\/$/, '') + '/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: t }),
+    });
+    if (!r.ok) return status(`Server said ${r.status}.`);
+    const img = $('#out-preview');
+    if (img.src) URL.revokeObjectURL(img.src);
+    img.src = URL.createObjectURL(await r.blob());
+    img.hidden = false;
+    status('This is exactly what the pen will draw.');
+  } catch (e) {
+    status(`Could not reach the plotter (${e.message}). Speech is unaffected.`);
+  }
+}
+
 async function write() {
   const t = text();
   if (!t) return status('Nothing to write.');
@@ -536,7 +560,11 @@ async function write() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: t }),
     });
-    status(r.ok ? 'Plotting — do not touch the bed.' : `Server said ${r.status}.`);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return status(j.error ? `Plotter: ${j.error}` : `Server said ${r.status}.`);
+    status(j.dryRun
+      ? `Dry run: ${j.contours} contours, ${j.widthMm}mm wide, ${j.travelMm}mm of pen travel. Nothing was printed.`
+      : `Plotting — ${j.travelMm}mm of pen travel. Do not touch the bed.`);
   } catch (e) {
     status(`Could not reach the plotter (${e.message}). The rest of the demo is unaffected.`);
   }
@@ -610,6 +638,7 @@ function show(name) {
 function wire() {
   $$('#bar nav button').forEach(b => b.onclick = () => show(b.dataset.view));
   $('[data-act=speak]').onclick = speak;
+  $('[data-act=preview]').onclick = preview;
   $('[data-act=write]').onclick = write;
   $('[data-act=edit]').onclick = () => show('compose');
   $('[data-act=clear]').onclick = () => { clearAll(); show('compose'); };

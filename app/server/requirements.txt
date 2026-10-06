@@ -1,0 +1,6 @@
+# Malayalam shaping needs HarfBuzz; nothing else will get conjuncts right.
+uharfbuzz>=0.37
+fonttools>=4.50
+pillow>=10            # the preview, which you must look at before plotting
+pyserial>=3.5         # streaming G-code to the printer
+flask>=3.0
