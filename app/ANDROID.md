@@ -96,8 +96,15 @@ Cloud voices are an optional upgrade, set per language in Settings:
 | Device | ✓ | ✓ | Offline. No key, no cost |
 | Google Cloud TTS | ✓ | ✓ | `ml-IN-Wavenet-C`. Cheapest per character |
 | ElevenLabs | ✓ | ✓ | Most natural; multilingual model |
-| Grok (xAI) | **~** | ✓ | 20 languages incl. Hindi and Bengali — **Malayalam is not on the list**, but the model attempts unlisted ones. Experimental |
-| **Deepgram Aura** | ✗ | ✓ | **No Malayalam voice exists.** English layer only |
+| Grok — xAI | **~** | ✓ | `api.x.ai`. 20 languages incl. Hindi and Bengali — **Malayalam is not on the list**, but the model attempts unlisted ones |
+| Groq — Orpheus | ✗ | ✓ | `api.groq.com`. English and Arabic only; PlayAI retired end of 2025 |
+| Deepgram Aura | ✗ | ✓ | No Malayalam voice exists |
+
+**Groq and Grok are different companies.** Groq is the LPU inference provider
+(`api.groq.com`); Grok is xAI's model (`api.x.ai`). Both have a TTS API, both
+are listed here, and they have different language coverage — which is why the
+settings spell out which is which. A test pins them apart, because mixing them
+up produces a silent failure rather than an obvious one.
 
 Support has three states, not two. `✗` means the provider is refused for that
 script however the dropdown is set, because the alternative is a device that

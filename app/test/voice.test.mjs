@@ -88,6 +88,26 @@ t('every provider declares the languages it can actually speak', () => {
 t('Deepgram declares English only — this is the fact the routing relies on', () => {
   eq(PROVIDERS.deepgram.langs.join(','), 'en');
 });
+
+/* Groq (api.groq.com, the inference provider) and Grok (api.x.ai, xAI's model)
+   are different companies with different APIs and different language coverage.
+   Confusing them is easy and the consequences are silent, so pin them apart. */
+t('Groq and Grok are distinct providers with distinct coverage', () => {
+  ok(PROVIDERS.groq && PROVIDERS.grok, 'one of them is missing');
+  eq(PROVIDERS.groq.langs.join(','), 'en', 'Groq is English-only (Orpheus)');
+  eq(supportLevel(PROVIDERS.groq, 'ml'), 'no', 'Groq has no Malayalam');
+  eq(supportLevel(PROVIDERS.grok, 'ml'), 'experimental', 'Grok may attempt Malayalam');
+  ok(PROVIDERS.groq.name.toLowerCase().includes('groq'));
+  ok(PROVIDERS.grok.name.toLowerCase().includes('xai'), 'Grok should name xAI to avoid confusion');
+});
+
+t('Groq uses a voice its hosted model actually serves', () => {
+  /* The open-source Orpheus voices (tara, leah, jess, leo, dan, mia, zac) are
+     NOT what Groq serves; it has autumn, diana, hannah, austin, daniel, troy. */
+  const groqVoices = ['autumn', 'diana', 'hannah', 'austin', 'daniel', 'troy'];
+  ok(groqVoices.includes(PROVIDERS.groq.voices.en),
+     `${PROVIDERS.groq.voices.en} is not a Groq-hosted Orpheus voice`);
+});
 t('the system voice needs no key, so there is always a fallback', () => {
   eq(PROVIDERS.system.key, false);
   ok(PROVIDERS.system.langs.includes('ml') && PROVIDERS.system.langs.includes('en'));

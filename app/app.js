@@ -678,7 +678,7 @@ function wire() {
   $('#set-tap').onchange = e => { S.tap = e.target.checked; save(); };
   $('#voice-ml').onchange = e => { S.voiceFor = { ...S.voiceFor, ml: e.target.value }; save(); };
   $('#voice-en').onchange = e => { S.voiceFor = { ...S.voiceFor, en: e.target.value }; save(); };
-  for (const id of ['google', 'deepgram', 'elevenlabs', 'grok'])
+  for (const id of ['google', 'deepgram', 'elevenlabs', 'groq', 'grok'])
     $(`#key-${id}`).oninput = e => { S.keys = { ...S.keys, [id]: e.target.value.trim() }; save(); };
   $('#prefetch').onclick = prefetchPhrases;
   $('#cache-clear').onclick = async () => {
@@ -1049,7 +1049,7 @@ function restore() {
   $('#set-action').value = S.action || 'speak';
   $('#voice-ml').value = (S.voiceFor || {}).ml || 'system';
   $('#voice-en').value = (S.voiceFor || {}).en || 'system';
-  for (const id of ['google', 'deepgram', 'elevenlabs', 'grok'])
+  for (const id of ['google', 'deepgram', 'elevenlabs', 'groq', 'grok'])
     $(`#key-${id}`).value = (S.keys || {})[id] || '';
   cacheStats().then(n => {
     if (n) $('#cache-note').textContent = `${n} clips cached — these play with no network.`;

@@ -179,7 +179,7 @@
       <option value="system" selected>Device voice — offline</option>
       <option value="google">Google Cloud TTS — ml-IN-Wavenet-C</option>
       <option value="elevenlabs">ElevenLabs — multilingual</option>
-      <option value="grok">Grok (xAI) — experimental for Malayalam</option>
+      <option value="grok">Grok — xAI, experimental for Malayalam</option>
     </select>
   </label>
 
@@ -189,7 +189,8 @@
       <option value="deepgram">Deepgram Aura — English only</option>
       <option value="google">Google Cloud TTS</option>
       <option value="elevenlabs">ElevenLabs</option>
-      <option value="grok">Grok (xAI)</option>
+      <option value="groq">Groq — Orpheus</option>
+      <option value="grok">Grok — xAI</option>
     </select>
   </label>
 
@@ -202,7 +203,10 @@
   <label>ElevenLabs API key
     <input id="key-elevenlabs" type="password" autocomplete="off" spellcheck="false">
   </label>
-  <label>Grok (xAI) API key
+  <label>Groq API key <small>(api.groq.com — the inference provider)</small>
+    <input id="key-groq" type="password" autocomplete="off" spellcheck="false" placeholder="gsk_…">
+  </label>
+  <label>Grok API key <small>(api.x.ai — xAI's model, a different company)</small>
     <input id="key-grok" type="password" autocomplete="off" spellcheck="false" placeholder="xai-…">
   </label>
 

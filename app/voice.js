@@ -48,9 +48,26 @@ export const PROVIDERS = {
     voices: { en: 'aura-2-thalia-en' },
     note: 'English only — Aura has no Malayalam voice. Used for the ABC layer.',
   },
+  /* Groq and Grok are different companies and this is an easy mistake to make:
+     Groq is the LPU inference provider (api.groq.com), Grok is xAI's model
+     (api.x.ai). Both have a TTS API and they behave quite differently, so the
+     UI spells out which is which. */
+  groq: {
+    id: 'groq',
+    name: 'Groq — Orpheus (English only)',
+    langs: ['en'],
+    key: 'API key',
+    model: 'canopylabs/orpheus-v1-english',
+    /* Groq's hosted voices are NOT the open-source Orpheus ones. tara, leah,
+       jess and so on belong to the Canopy AI release; the Groq deployment
+       serves autumn, diana, hannah, austin, daniel and troy. */
+    voices: { en: 'hannah' },
+    note: 'English and Arabic only — PlayAI was retired at the end of 2025, '
+        + 'leaving two Orpheus models. No Indian languages.',
+  },
   grok: {
     id: 'grok',
-    name: 'Grok (xAI)',
+    name: 'Grok — xAI (experimental Malayalam)',
     langs: ['en'],
     /* Grok lists 20 languages including Hindi and Bengali, but NOT Malayalam.
        Its docs say the model "is capable of generating speech in additional
@@ -196,6 +213,21 @@ async function fetchGrok(text, key, voice, lang) {
   return r.blob();
 }
 
+async function fetchGroq(text, key, voice) {
+  const r = await fetch('https://api.groq.com/openai/v1/audio/speech', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: PROVIDERS.groq.model,
+      voice,
+      input: text,
+      response_format: 'wav',
+    }),
+  });
+  if (!r.ok) throw new Error(`Groq ${r.status}: ${(await r.text()).slice(0, 120)}`);
+  return r.blob();
+}
+
 async function fetchElevenLabs(text, key, voice) {
   const r = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voice)}`,
@@ -207,7 +239,7 @@ async function fetchElevenLabs(text, key, voice) {
 }
 
 const FETCHERS = { deepgram: fetchDeepgram, google: fetchGoogle,
-                   elevenlabs: fetchElevenLabs, grok: fetchGrok };
+                   elevenlabs: fetchElevenLabs, grok: fetchGrok, groq: fetchGroq };
 
 /* ── routing and playback ─────────────────────────────────────────────── */
 
