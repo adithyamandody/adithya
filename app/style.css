@@ -316,3 +316,37 @@ input[type=password]{
 #voice-report:empty{display:none}
 #voice-report .good{color:var(--hot)}
 #voice-report .bad{color:#f0a0a0}
+
+/* ── medicines ─────────────────────────────────────────────────────────────
+   The due state has to be readable from across a room by someone who may not
+   be able to lean in, so it is large and high-contrast rather than a tidy
+   notification strip. */
+#meds h3{margin:22px 0 8px;font-size:15px;color:var(--dim);
+         text-transform:uppercase;letter-spacing:.08em}
+.med-big{border:2px solid var(--hot);border-radius:12px;padding:22px 24px;
+         background:#10241f;margin-bottom:12px}
+.med-kicker{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--hot)}
+.med-big h2{margin:6px 0 4px;font-size:34px;line-height:1.15;color:var(--ink)}
+.med-big p{margin:4px 0 0;font-size:16px}
+#med-keys{text-align:center;padding:12px;border:1px dashed var(--line);
+          border-radius:10px;color:var(--dim);font-size:15px}
+#med-keys b{color:var(--hot)}
+#med-calm{padding:18px 0}
+#med-next{font-size:17px}
+#med-plan{list-style:none;padding:0;margin:0}
+#med-plan li{display:flex;align-items:center;gap:12px;padding:10px 12px;
+             border-bottom:1px solid var(--line)}
+#med-plan li b{font-variant-numeric:tabular-nums;color:var(--ink);min-width:54px}
+.med-state{margin-left:auto;font-size:12px;text-transform:uppercase;
+           letter-spacing:.07em;color:var(--dim)}
+#med-plan li.med-due{background:#10241f}
+#med-plan li.med-due .med-state{color:var(--hot)}
+#med-plan li.med-taken{opacity:.5}
+#med-plan li.med-missed .med-state{color:#f0a0a0}
+.med-warn{margin-top:18px;padding:11px 13px;border:1px solid #5a3236;
+          border-radius:8px;background:#2a1618;color:#e6c3c6;font-size:13.5px}
+#med-edit{margin-top:16px}
+#med-edit summary{cursor:pointer;color:var(--dim);padding:8px 0}
+#med-text{width:100%;background:var(--panel);color:var(--ink);
+          border:1px solid var(--line);border-radius:8px;padding:10px;
+          font-family:inherit;font-size:15px;line-height:1.5}

@@ -5,7 +5,7 @@
   "description": "Single-switch Malayalam text entry with a constraint-aware scan tree",
   "scripts": {
     "build": "node scripts/build-www.mjs",
-    "test": "node app/test/scan.test.mjs && node app/test/session.test.mjs && node app/test/voice.test.mjs && node app/test/clock.test.mjs && node app/test/syntax.test.mjs && node app/test/manifest.test.mjs",
+    "test": "node app/test/scan.test.mjs && node app/test/session.test.mjs && node app/test/voice.test.mjs && node app/test/clock.test.mjs && node app/test/meds.test.mjs && node app/test/syntax.test.mjs && node app/test/manifest.test.mjs",
     "sync": "npm run build && npx cap sync android",
     "apk": "npm run sync && cd android && ./gradlew assembleDebug",
     "install-apk": "adb install -r android/app/build/outputs/apk/debug/app-debug.apk"

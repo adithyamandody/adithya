@@ -32,6 +32,7 @@
   <nav>
     <button data-view="compose" class="on">Compose</button>
     <button data-view="output">Output</button>
+    <button data-view="meds">Meds</button>
     <button data-view="compare">Compare</button>
     <button data-view="settings">Settings</button>
     <button id="help-open" title="How do I use this?">?</button>
@@ -80,6 +81,44 @@
     <div><b id="s-time">0.0s</b><span>elapsed</span></div>
     <div><b id="s-mode">B</b><span>mode</span></div>
   </div>
+</section>
+
+<!-- ───────────────────────── medicines ───────────────────────── -->
+<section id="meds" class="view">
+  <div id="med-due" hidden>
+    <div class="med-big">
+      <span class="med-kicker">Time for</span>
+      <h2 id="med-name"></h2>
+      <p id="med-note" class="muted"></p>
+      <p id="med-late" class="muted"></p>
+    </div>
+    <div id="med-keys">
+      <b>press</b> = taken &nbsp;·&nbsp; <b>backspace</b> = remind me later
+    </div>
+  </div>
+
+  <div id="med-calm">
+    <p id="med-next" class="muted">No medicines set up yet.</p>
+  </div>
+
+  <h3>Today</h3>
+  <ul id="med-plan"></ul>
+
+  <p class="muted med-warn">
+    This is a <b>reminder</b>, not a medical alarm. It can only sound while the
+    app is open and the tablet is awake, so it must not be the only thing a dose
+    depends on.
+  </p>
+
+  <details id="med-edit">
+    <summary>Edit the list</summary>
+    <p class="muted">One per line: name, time or times, and an optional note
+       after <code>#</code>.</p>
+    <textarea id="med-text" rows="7" spellcheck="false"
+      placeholder="Blood pressure 08:00, 20:00 # after food"></textarea>
+    <button id="med-save">Save</button>
+    <button id="med-test" class="ghost">Test the reminder</button>
+  </details>
 </section>
 
 <!-- ───────────────────────── output ───────────────────────── -->

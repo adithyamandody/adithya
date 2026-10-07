@@ -14,7 +14,7 @@
  */
 const CACHE = '__BUILD__';
 const ASSETS = [
-  'index.html', 'style.css', 'app.js', 'scan.js', 'clock.js', 'tour.js', 'voice.js',
+  'index.html', 'style.css', 'app.js', 'scan.js', 'clock.js', 'meds.js', 'tour.js', 'voice.js',
   'manifest.json', 'icon.svg',
   'data/units.json', 'data/bigrams.json', 'data/legal.json',
   'data/gridA.json', 'data/meta.json',

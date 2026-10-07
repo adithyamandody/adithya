@@ -12,6 +12,7 @@
 
 import { ScanSession, simulate, decompose } from './scan.js';
 import { makeClock } from './clock.js';
+import { parseMeds, dueNow, nextUp, dayPlan, doseKey, hhmmOf, spokenReminder } from './meds.js';
 import { STEPS, sentenceFor, makeState, step as tourStep, isLast } from './tour.js';
 import { PROVIDERS, say, scriptOf, routeFor, cacheStats, cacheClear,
          listVoices, describeVoices, pickBackend, openVoiceInstall } from './voice.js';
@@ -354,11 +355,30 @@ setInterval(paintStats, 100);          // display only — never drives the scan
 
 /* ═══════════════════════ input ════════════════════════════ */
 
+/* ── who owns the switches right now ──────────────────────────────────────
+ * The scanner owns the compose view. Every other screen that the user can
+ * reach has to say what a press means there, or the switches go dead the
+ * moment they leave compose — and a screen the target user cannot operate
+ * with a switch is a screen they do not have. Touch is the fallback for a
+ * carer, never the requirement.
+ */
+const SWITCH_VIEWS = {};
+function activeView() {
+  const v = $('.view.on');
+  return v ? v.id : 'compose';
+}
+function viewHandler(which) {
+  const h = SWITCH_VIEWS[activeView()];
+  return h && typeof h[which] === 'function' ? h[which] : null;
+}
+
 function doPress() {
   const now = performance.now();
   const gap = now - S.lastPressAt;
   S.lastPressAt = now;
   logSwitch(gap);
+  const own = viewHandler('select');
+  if (own) { own(); return; }
   if ($('#settings').classList.contains('on')) return;   // test view: no scanning
   if (S.tour) S.tour.presses++;
   if (S.session && S.session.running) { S.session.press(); return; }
@@ -471,6 +491,8 @@ addEventListener('pointerdown', e => {
 function doBackspace() {
   S.lastBkspAt = performance.now();
   logSwitch(null, 'backspace');
+  const own = viewHandler('back');
+  if (own) { own(); return; }
   if (S.session && S.session.running) S.session.stop();
   backspace();
   if (S.paused) { $('#scan').innerHTML = ''; S.paused = false; }
@@ -641,6 +663,7 @@ function show(name) {
   $$('#bar nav button').forEach(b => b.classList.toggle('on', b.dataset.view === name));
   if (name === 'output') $('#out-text').textContent = text() || '—';
   if (name === 'compare' && !$('#cmp-target').textContent) runCompare(SAMPLE);
+  if (name === 'meds') paintMeds();
 }
 
 function wire() {
@@ -1096,6 +1119,136 @@ async function voiceScan() {
         + 'it simply cannot speak Malayalam aloud.');
 }
 
+/* ═══════════════════════ medicines ════════════════════════
+ * A reminder that arrives on the device they already use, says itself out
+ * loud, and is answered with the same two switches as everything else.
+ */
+const MED_KEY = 'aksharascan-meds';
+const TAKEN_KEY = 'aksharascan-meds-taken';
+const SNOOZE_MIN = 15;
+
+let medSnoozeUntil = 0;      // minutes-of-day; a "later" that survives repaints
+let medSpokenFor = null;     // so a due dose announces itself once, not every tick
+
+function medText() {
+  try { return localStorage.getItem(MED_KEY) || ''; } catch { return ''; }
+}
+function medList() { return parseMeds(medText()); }
+
+function takenSet() {
+  try { return new Set(JSON.parse(localStorage.getItem(TAKEN_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+function markTaken(key) {
+  const s = takenSet();
+  s.add(key);
+  /* Keep only the last few days, or this grows forever on a device that is
+     never cleared. */
+  const keep = [...s].filter(k => k.slice(0, 10) >= dayStamp(-3));
+  try { localStorage.setItem(TAKEN_KEY, JSON.stringify(keep)); } catch {}
+}
+
+/** Local date as YYYY-MM-DD. Deliberately NOT toISOString(), which is UTC and
+    would roll the day over at 05:30 in India. */
+function dayStamp(offsetDays = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function nowMinutes() {
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function currentDue() {
+  const now = nowMinutes();
+  if (now < medSnoozeUntil) return null;
+  return dueNow(medList(), now, takenSet(), dayStamp())[0] || null;
+}
+
+function paintMeds() {
+  const due = currentDue();
+  const now = nowMinutes();
+
+  $('#med-due').hidden = !due;
+  $('#med-calm').hidden = !!due;
+
+  if (due) {
+    $('#med-name').textContent = due.med.name;
+    $('#med-note').textContent = due.med.note || '';
+    $('#med-note').hidden = !due.med.note;
+    $('#med-late').textContent = due.lateMin < 1
+      ? `Due now (${hhmmOf(due.time)})`
+      : `Due at ${hhmmOf(due.time)} — ${due.lateMin} minutes ago`;
+  } else {
+    const n = nextUp(medList(), now);
+    $('#med-next').textContent = !medList().length
+      ? 'No medicines set up yet. Open “Edit the list” below.'
+      : n ? `Next: ${n.med.name} at ${hhmmOf(n.time)}`
+          : 'Nothing else due today.';
+  }
+
+  const rows = dayPlan(medList(), now, takenSet(), dayStamp());
+  $('#med-plan').innerHTML = rows.length
+    ? rows.map(r => `<li class="med-${r.state}">`
+        + `<b>${hhmmOf(r.time)}</b> ${escapeHtml(r.med.name)}`
+        + `<span class="med-state">${r.state}</span></li>`).join('')
+    : '<li class="muted">nothing scheduled</li>';
+
+  /* Announce once per dose, not on every tick. */
+  if (due) {
+    const k = doseKey(due.med, due.time, dayStamp());
+    if (medSpokenFor !== k) {
+      medSpokenFor = k;
+      flash(`Medicine: ${due.med.name}`);
+      say(spokenReminder(due), S).catch(() => {});
+    }
+  } else {
+    medSpokenFor = null;
+  }
+}
+
+function medTaken() {
+  const due = currentDue();
+  if (!due) return;
+  markTaken(doseKey(due.med, due.time, dayStamp()));
+  medSnoozeUntil = 0;
+  flash(`${due.med.name} — marked taken`);
+  paintMeds();
+}
+
+function medSnooze() {
+  if (!currentDue()) return;
+  medSnoozeUntil = nowMinutes() + SNOOZE_MIN;
+  medSpokenFor = null;
+  flash(`Reminding again in ${SNOOZE_MIN} minutes`);
+  paintMeds();
+}
+
+/* The switches, on this screen: press = taken, backspace = later. */
+SWITCH_VIEWS.meds = { select: medTaken, back: medSnooze };
+
+function wireMeds() {
+  $('#med-text').value = medText();
+  $('#med-save').onclick = () => {
+    try { localStorage.setItem(MED_KEY, $('#med-text').value); } catch {}
+    medSpokenFor = null;
+    $('#med-save').textContent = `Saved ${medList().length}`;
+    setTimeout(() => { $('#med-save').textContent = 'Save'; }, 1600);
+    paintMeds();
+  };
+  /* Nobody should have to wait until 08:00 to find out whether the reminder
+     works — least of all a carer setting it up for someone else. */
+  $('#med-test').onclick = () => {
+    const m = medList()[0];
+    if (!m) { flash('Add a medicine first'); return; }
+    flash(`Medicine: ${m.name}`);
+    say(spokenReminder({ med: m }), S).catch(() => {});
+  };
+  paintMeds();
+  setInterval(paintMeds, 20000);
+}
+
 function save() {
   try {
     localStorage.setItem('aksharascan', JSON.stringify(
@@ -1138,6 +1291,7 @@ function restore() {
   }
   restore();
   wire();
+  wireMeds();
   paintText();
   if (firstRun()) $('#help').classList.add('on');
   else $('#help').classList.remove('on');
