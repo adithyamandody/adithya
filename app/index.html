@@ -34,6 +34,7 @@
     <button data-view="output">Output</button>
     <button data-view="meds">Meds</button>
     <button data-view="read">Read</button>
+    <button data-view="chat">Chat</button>
     <button data-view="compare">Compare</button>
     <button data-view="settings">Settings</button>
     <button id="help-open" title="How do I use this?">?</button>
@@ -162,6 +163,34 @@
   </div>
 </section>
 
+<!-- ───────────────────────── chat ───────────────────────── -->
+<section id="chat" class="view">
+  <div id="ch-log"></div>
+
+  <div id="ch-ask" class="muted">
+    Compose a question on the <b>Compose</b> tab, then send it here — or set
+    <b>Settings → Hold switch 2</b> to <b>Ask the AI</b> and send it without
+    leaving the keyboard.
+  </div>
+
+  <div id="ch-keys">
+    <b>press</b> = send what you composed &nbsp;·&nbsp; <b>backspace</b> = say the last reply again
+  </div>
+
+  <div id="ch-ctl">
+    <button id="ch-send">Ask</button>
+    <button id="ch-again" class="ghost">🔊 Say again</button>
+    <button id="ch-clear" class="ghost">Clear chat</button>
+  </div>
+
+  <p id="ch-status" class="muted"></p>
+
+  <p class="muted ch-warn">
+    The chat is the <b>only</b> part of this app that needs internet. Typing,
+    speaking, reminders and reading all work offline.
+  </p>
+</section>
+
 <!-- ───────────────────────── output ───────────────────────── -->
 <section id="output" class="view">
   <div id="out-text" class="ml big"></div>
@@ -243,6 +272,7 @@
   <label>Hold switch 2, or press both switches
     <select id="set-action">
       <option value="speak" selected>Speak it aloud</option>
+      <option value="ask">Ask the AI</option>
       <option value="write">Write it on the plotter</option>
       <option value="both">Speak it and write it</option>
       <option value="none">Do nothing</option>
@@ -299,6 +329,21 @@
   <label>Groq API key <small>(api.groq.com — the inference provider)</small>
     <input id="key-groq" type="password" autocomplete="off" spellcheck="false" placeholder="gsk_…">
   </label>
+  <h3>Chat</h3>
+  <p class="muted">Which AI answers, and with which model. Models are listed
+     from the provider rather than hardcoded, because hosted names get retired.</p>
+  <label>AI provider
+    <select id="ch-provider">
+      <option value="">Off</option>
+      <option value="groq">Groq</option>
+      <option value="grok">Grok (xAI)</option>
+    </select>
+  </label>
+  <label>Model
+    <select id="ch-model"><option value="">— load the list —</option></select>
+  </label>
+  <button id="ch-models" class="ghost">Load models</button>
+
   <label>Grok API key <small>(api.x.ai — xAI's model, a different company)</small>
     <input id="key-grok" type="password" autocomplete="off" spellcheck="false" placeholder="xai-…">
   </label>

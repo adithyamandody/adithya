@@ -373,3 +373,20 @@ input[type=password]{
 #rd-ctl select{background:var(--panel);color:var(--ink);border:1px solid var(--line);
                border-radius:7px;padding:7px 9px;font-size:14px}
 #read.reading #rd-play{min-width:116px}
+
+/* ── chat ──────────────────────────────────────────────────────────────── */
+#ch-log{min-height:160px;max-height:46vh;overflow:auto;padding:4px 0}
+.ch-msg{padding:11px 14px;border-radius:12px;margin-bottom:9px;max-width:88%;
+        line-height:1.55;font-size:17px}
+.ch-msg.you{background:var(--panel);border:1px solid var(--line);margin-left:auto}
+.ch-msg.ai{background:#10241f;border:1px solid var(--hot-dim)}
+.ch-msg .who{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+             color:var(--dim);margin-bottom:4px}
+.ch-msg.thinking{opacity:.6;font-style:italic}
+#ch-ask{padding:10px 0;font-size:15px}
+#ch-keys{text-align:center;padding:11px;border:1px dashed var(--line);border-radius:10px;
+         color:var(--dim);font-size:15px;margin:10px 0}
+#ch-keys b{color:var(--hot)}
+#ch-ctl{display:flex;gap:9px;flex-wrap:wrap}
+.ch-warn{margin-top:16px;padding:10px 13px;border:1px solid var(--line);
+         border-radius:8px;background:var(--panel);font-size:13.5px}

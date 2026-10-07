@@ -14,6 +14,7 @@ import { ScanSession, simulate, decompose } from './scan.js';
 import { makeClock } from './clock.js';
 import { parseMeds, dueNow, nextUp, dayPlan, doseKey, hhmmOf, spokenReminder } from './meds.js';
 import { makeBook, clampAt, progress, remainingSeconds, humanTime, PACES, paceById } from './reader.js';
+import { CHAT_PROVIDERS, pickModels, buildMessages, cleanReply, blockedReason, langOf } from './chat.js';
 import { STEPS, sentenceFor, makeState, step as tourStep, isLast } from './tour.js';
 import { PROVIDERS, say, scriptOf, routeFor, cacheStats, cacheClear,
          listVoices, describeVoices, pickBackend, openVoiceInstall,
@@ -39,6 +40,8 @@ const S = {
   layer: 'ml',      // 'ml' | 'num' | 'eng'
   action: 'speak',  // what a hold / chord does
   voiceFor: { ml: 'system', en: 'system' },
+  chatProvider: '',   // '' = chat off
+  chatModel: '',
   keys: {},
 };
 
@@ -467,6 +470,14 @@ function fireAction(how) {
   const act = S.action || 'speak';
   if (!S.buf.length) { flash(`${how}: nothing to send yet`); return; }
   if (act === 'none') { flash(`${how}: no action set`); return; }
+  /* Asking without leaving the keyboard is the point: navigating to the chat
+     tab by switch would cost more presses than the question did. */
+  if (act === 'ask') {
+    show('chat');
+    flash(`${how} → asking the AI`);
+    chatSend(text());
+    return;
+  }
   if (act === 'speak' || act === 'both') speak();
   if (act === 'write' || act === 'both') write();
   if (S.tour) tourProgress();
@@ -666,6 +677,7 @@ function show(name) {
   if (name === 'output') $('#out-text').textContent = text() || '—';
   if (name === 'compare' && !$('#cmp-target').textContent) runCompare(SAMPLE);
   if (name === 'meds') paintMeds();
+  if (name === 'chat') paintChat();
 }
 
 function wire() {
@@ -1415,12 +1427,122 @@ function wireRead() {
   };
 }
 
+/* ═══════════════════════ AI chat ══════════════════════════
+ * The only part of this app that needs a network, and it says so.
+ */
+const CH = { history: [], busy: false, lastReply: '' };
+
+function chatProvider() { return CHAT_PROVIDERS[S.chatProvider] || null; }
+
+function paintChat() {
+  const log = $('#ch-log');
+  log.innerHTML = CH.history.map(m =>
+    `<div class="ch-msg ${m.role === 'ai' ? 'ai' : 'you'}">`
+    + `<span class="who">${m.role === 'ai' ? 'AI' : 'You'}</span>`
+    + `${escapeHtml(m.text)}</div>`).join('')
+    + (CH.busy ? '<div class="ch-msg ai thinking">thinking…</div>' : '');
+  log.scrollTop = log.scrollHeight;
+  $('#ch-again').disabled = !CH.lastReply;
+}
+
+async function chatSend(textIn) {
+  if (CH.busy) return;
+  /* Named `question`, not `text`: a local called `text` shadows the global
+     text() that supplies the composed sentence, and reading it in its own
+     initializer throws. */
+  const question = (textIn !== undefined ? textIn : text()).trim();
+  const p = chatProvider();
+  const key = (S.keys || {})[p ? p.keyField : ''] || '';
+
+  const why = blockedReason({ online: navigator.onLine, provider: p, key, text: question });
+  if (why) { $('#ch-status').textContent = why; flash(why); return; }
+
+  CH.history.push({ role: 'user', text: question });
+  CH.busy = true;
+  $('#ch-status').textContent = '';
+  paintChat();
+
+  try {
+    const r = await fetch(`${p.base}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: S.chatModel || p.fallback,
+        messages: buildMessages(CH.history.slice(0, -1), question),
+        /* Capped at the source as well as asked for in the prompt: a model
+           that ignores the instruction still cannot produce six paragraphs
+           for a listener to sit through. */
+        max_tokens: 300,
+        temperature: 0.4,
+      }),
+    });
+    if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 140)}`);
+    const data = await r.json();
+    const raw = data.choices && data.choices[0] && data.choices[0].message
+      ? data.choices[0].message.content : '';
+    const reply = cleanReply(raw) || '(the model returned nothing)';
+    CH.history.push({ role: 'ai', text: reply });
+    CH.lastReply = reply;
+    CH.busy = false;
+    paintChat();
+    say(reply, S).catch(() => {});
+  } catch (e) {
+    CH.busy = false;
+    CH.history.pop();                 // do not leave the question stranded
+    paintChat();
+    $('#ch-status').textContent = `Could not reach ${p.name}: ${e.message}`;
+  }
+}
+
+/* Switch 2 repeats the answer. Hearing a reply once is often not enough, and
+   asking again would cost another minute of typing. */
+function chatRepeat() {
+  if (CH.lastReply) say(CH.lastReply, S).catch(() => {});
+}
+
+SWITCH_VIEWS.chat = { select: () => chatSend(), back: chatRepeat };
+
+async function loadChatModels() {
+  const p = chatProvider();
+  const key = (S.keys || {})[p ? p.keyField : ''] || '';
+  if (!p || !key) { $('#ch-status').textContent = 'Choose a provider and enter its key first.'; return; }
+  $('#ch-status').textContent = 'Loading models…';
+  try {
+    const r = await fetch(`${p.base}/models`, { headers: { Authorization: `Bearer ${key}` } });
+    if (!r.ok) throw new Error(`${r.status}`);
+    const ids = pickModels(await r.json());
+    if (!ids.length) throw new Error('no chat models listed');
+    $('#ch-model').innerHTML = ids
+      .map(id => `<option value="${id}"${id === S.chatModel ? ' selected' : ''}>${id}</option>`).join('');
+    if (!ids.includes(S.chatModel)) { S.chatModel = ids[0]; $('#ch-model').value = ids[0]; save(); }
+    $('#ch-status').textContent = `${ids.length} models available.`;
+  } catch (e) {
+    $('#ch-status').textContent = `Could not list models (${e.message}). `
+      + `Falling back to ${p.fallback}.`;
+  }
+}
+
+function wireChat() {
+  $('#ch-provider').value = S.chatProvider || '';
+  $('#ch-provider').onchange = e => { S.chatProvider = e.target.value; save(); };
+  $('#ch-model').onchange = e => { S.chatModel = e.target.value; save(); };
+  $('#ch-models').onclick = loadChatModels;
+  $('#ch-send').onclick = () => chatSend();
+  $('#ch-again').onclick = chatRepeat;
+  $('#ch-clear').onclick = () => { CH.history = []; CH.lastReply = ''; $('#ch-status').textContent = ''; paintChat(); };
+  if (S.chatModel) {
+    $('#ch-model').innerHTML = `<option value="${S.chatModel}" selected>${S.chatModel}</option>`;
+  }
+  paintChat();
+}
+
 function save() {
   try {
     localStorage.setItem('aksharascan', JSON.stringify(
       { mode: S.mode, period: S.period, audio: S.audio, tap: S.tap,
         predict: S.predict, action: S.action, server: S.server,
-        voiceFor: S.voiceFor, keys: S.keys }));
+        voiceFor: S.voiceFor, keys: S.keys,
+        chatProvider: S.chatProvider, chatModel: S.chatModel }));
   } catch (_) { /* private mode — settings just will not persist */ }
 }
 
@@ -1459,6 +1581,7 @@ function restore() {
   wire();
   wireMeds();
   wireRead();
+  wireChat();
   paintText();
   if (firstRun()) $('#help').classList.add('on');
   else $('#help').classList.remove('on');

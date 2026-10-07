@@ -77,6 +77,9 @@ that means for the derived data files, in [NOTICE.md](NOTICE.md).
 | **Prediction** | Word completion and next-word, learned from use |
 | **Speech** | Device voice offline — native Android TTS in the APK, Web Speech in the browser; five cloud providers, cached so they work offline after one fetch |
 | **Switch** | Two-switch ESP32 over Bluetooth HID; hold or chord for a third command |
+| **Reminders** | Medicine schedule, spoken aloud, answered with the switches. Offline |
+| **Reader** | Open a PDF and hear it a sentence at a time; switch controls the pace. Offline |
+| **Chat** | Ask an AI and hear the reply. The one feature that needs internet |
 | **Plotter** | Malayalam → G-code with real HarfBuzz shaping |
 | **Tests** | 131, run with `npm test` |
 
