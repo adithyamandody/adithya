@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AksharaScan — The Presenter's Guide</title>
+<style>
+  @page { size: A4; margin: 18mm 17mm 16mm 17mm; }
+
+  :root{
+    --ink:#15181d;
+    --soft:#5a6472;
+    --line:#d9dee5;
+    --accent:#0f5f6b;
+    --accent-bg:#eef6f7;
+    --warm:#8a4b18;
+    --warm-bg:#fdf3ea;
+    --red:#8c2f39;
+    --red-bg:#fdf0f1;
+    --green:#1d6042;
+    --green-bg:#edf6f1;
+    --mal:"Malayalam MN","Malayalam Sangam MN","Nirmala UI",serif;
+  }
+
+  *{box-sizing:border-box;}
+  html{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  body{
+    font-family:Charter,Georgia,"Times New Roman",serif;
+    color:var(--ink); font-size:10.8pt; line-height:1.62; margin:0;
+  }
+  .mal{font-family:var(--mal); font-size:1.14em;}
+
+  h1,h2,h3,h4,.kicker,.lede,th,.tag,.num,.chk-h,.qn{
+    font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;}
+
+  /* ---------- cover ---------- */
+  .cover{border-bottom:2.5px solid var(--ink); padding-bottom:16px; margin-bottom:22px;}
+  .kicker{font-size:8.2pt; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); font-weight:700;}
+  h1{font-size:30pt; line-height:1.04; margin:9px 0 6px; letter-spacing:-.022em; font-weight:750;}
+  h1 .sub{display:block; font-size:12.5pt; font-weight:500; color:var(--soft);
+          letter-spacing:0; margin-top:11px; line-height:1.42;}
+  .meta{font-size:8.8pt; color:var(--soft); margin-top:14px;
+        font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;}
+  .meta b{color:var(--ink);}
+
+  h2{
+    font-size:14.5pt; margin:30px 0 11px; letter-spacing:-.012em; font-weight:700;
+    padding-bottom:6px; border-bottom:1px solid var(--line); page-break-after:avoid;
+  }
+  h2 .n{color:var(--accent); font-weight:700; margin-right:9px;}
+  h3{font-size:11.2pt; margin:19px 0 6px; font-weight:700; page-break-after:avoid;}
+  h4{font-size:10pt; margin:14px 0 4px; font-weight:700; page-break-after:avoid;}
+  p{margin:0 0 10px;}
+  ul,ol{margin:0 0 11px; padding-left:20px;}
+  li{margin-bottom:6px;}
+  strong{font-weight:700;}
+  a{color:var(--accent); text-decoration:none;}
+  code{font-family:"SF Mono",Menlo,monospace; font-size:.86em; background:#f2f4f7;
+       padding:1px 4px; border-radius:3px;}
+
+  .lede{font-size:11.6pt; line-height:1.5; background:var(--accent-bg);
+        border-left:3px solid var(--accent); padding:14px 17px; margin:0 0 20px;
+        page-break-inside:avoid;}
+
+  /* ---------- tables ---------- */
+  table{width:100%; border-collapse:collapse; margin:13px 0 15px; font-size:9.4pt;
+        page-break-inside:avoid;}
+  th{text-align:left; font-size:7.9pt; text-transform:uppercase; letter-spacing:.07em;
+     color:var(--soft); border-bottom:1.5px solid var(--ink); padding:0 8px 6px 0; font-weight:700;}
+  td{padding:8px 8px 8px 0; border-bottom:1px solid var(--line); vertical-align:top;}
+  th:last-child,td:last-child{padding-right:0;}
+  .num{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; font-weight:600;}
+  tr.hero td{background:var(--accent-bg); font-weight:700; color:var(--accent);}
+  tr.dim td{color:var(--soft);}
+
+  /* ---------- callouts ---------- */
+  .box{border:1px solid var(--line); border-radius:5px; padding:13px 15px; margin:15px 0;
+       page-break-inside:avoid;}
+  .box.accent{background:var(--accent-bg); border-color:#bcd8dc;}
+  .box.warm{background:var(--warm-bg); border-color:#e8d2ba;}
+  .box.red{background:var(--red-bg); border-color:#e8c4c8;}
+  .box.green{background:var(--green-bg); border-color:#c2ddd0;}
+  .box .tag{display:block; font-size:7.9pt; letter-spacing:.11em; text-transform:uppercase;
+            font-weight:700; margin-bottom:6px;}
+  .box.accent .tag{color:var(--accent);}
+  .box.warm .tag{color:var(--warm);}
+  .box.red .tag{color:var(--red);}
+  .box.green .tag{color:var(--green);}
+  .box p:last-child{margin-bottom:0;}
+
+  .pitch{border:2px solid var(--ink); border-radius:5px; padding:16px 18px; margin:16px 0;
+         font-size:11.4pt; line-height:1.5; page-break-inside:avoid;}
+  .pitch .tag{display:block; font-size:7.9pt; letter-spacing:.11em; text-transform:uppercase;
+              color:var(--soft); font-weight:700; margin-bottom:8px;
+              font-family:-apple-system,sans-serif;}
+  .pitch p:last-child{margin-bottom:0;}
+
+  /* ---------- question and answer ---------- */
+  .qa{margin:0 0 15px; page-break-inside:avoid;}
+  .qn{font-weight:700; font-size:10.4pt; margin:0 0 5px; color:var(--accent);}
+  .qa p{margin:0 0 7px;}
+  .qa p:last-child{margin-bottom:0;}
+  .say{border-left:2.5px solid var(--line); padding:2px 0 2px 13px; margin:7px 0;
+       font-style:italic; color:var(--ink);}
+
+  /* ---------- glossary ---------- */
+  dl{margin:12px 0;}
+  dt{font-family:-apple-system,sans-serif; font-weight:700; font-size:9.9pt; margin-top:11px;}
+  dd{margin:3px 0 0 0; font-size:10.2pt; color:var(--ink);}
+
+  /* ---------- checklist ---------- */
+  .chk{border:1.5px solid var(--ink); border-radius:5px; padding:15px 17px; margin:16px 0;
+       page-break-inside:avoid;}
+  .chk-h{font-size:11pt; font-weight:700; margin-bottom:11px;}
+  .chk ol{padding-left:0; list-style:none; margin:0;}
+  .chk li{margin-bottom:10px; padding-left:27px; position:relative; line-height:1.48;}
+  .chk li::before{content:""; position:absolute; left:0; top:3px; width:13px; height:13px;
+                  border:1.5px solid var(--ink); border-radius:2.5px;}
+  .chk li:last-child{margin-bottom:0;}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:13px 0;}
+  .card{border:1px solid var(--line); border-radius:5px; padding:12px 14px;
+        page-break-inside:avoid;}
+  .card h4{font-size:9.7pt; margin:0 0 5px; font-weight:700;}
+  .card p{font-size:9.4pt; margin:0; color:var(--soft); line-height:1.48;}
+
+  .steps{counter-reset:s; list-style:none; padding-left:0;}
+  .steps li{counter-increment:s; position:relative; padding-left:30px; margin-bottom:9px;}
+  .steps li::before{content:counter(s); position:absolute; left:0; top:0;
+    width:19px; height:19px; border-radius:50%; background:var(--accent); color:#fff;
+    font-family:-apple-system,sans-serif; font-size:8.4pt; font-weight:700;
+    display:flex; align-items:center; justify-content:center;}
+
+  .pb{page-break-before:always;}
+  .nobreak{page-break-inside:avoid;}
+  footer{margin-top:28px; padding-top:12px; border-top:1px solid var(--line);
+         font-size:8.4pt; color:var(--soft); font-family:-apple-system,sans-serif;}
+  .toc{font-size:9.8pt; columns:2; column-gap:26px; margin:14px 0 0;}
+  .toc div{margin-bottom:5px; break-inside:avoid;}
+  .toc b{color:var(--accent); display:inline-block; width:17px;}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="kicker">Presenter's Guide &middot; read this before the fair</div>
+  <h1>AksharaScan
+    <span class="sub">Everything in this project, explained in plain words &mdash; what it does, why it matters, what the numbers mean, and what to say when a judge asks you a hard question.</span>
+  </h1>
+  <div class="meta">
+    Written for <b>Adithya</b> &middot; Class 12 &middot; Kozhikode &nbsp;·&nbsp;
+    Project: <b>AksharaScan</b> &nbsp;·&nbsp; 7 October 2026
+  </div>
+</div>
+
+<div class="lede">
+<strong>You do not need to memorise this.</strong> Read it once, slowly. Then read
+only two sections again before you stand at the table: <strong>section 9</strong>
+(what to say in the first thirty seconds) and <strong>section 11</strong> (the
+questions judges ask). Everything else is here so that nothing surprises you.
+</div>
+
+<div class="toc">
+  <div><b>1</b> What you built, in one breath</div>
+  <div><b>2</b> Who this is for</div>
+  <div><b>3</b> How typing with one button works</div>
+  <div><b>4</b> Why Malayalam is harder than English</div>
+  <div><b>5</b> The clever part: asking good questions</div>
+  <div><b>6</b> What is actually in the box</div>
+  <div><b>7</b> The numbers, and what they mean</div>
+  <div><b>8</b> The honest part: you were wrong</div>
+  <div><b>9</b> The first thirty seconds at the table</div>
+  <div><b>10</b> Words you will need to explain</div>
+  <div><b>11</b> Questions judges ask</div>
+  <div><b>12</b> Four traps to avoid</div>
+  <div><b>13</b> What you should admit freely</div>
+  <div><b>14</b> If something breaks</div>
+  <div><b>15</b> What is yours and what is borrowed</div>
+</div>
+
+<h2><span class="n">1</span>What you built, in one breath</h2>
+
+<p>You built a way for someone who can move only one muscle to write Malayalam
+&mdash; and you measured, with real numbers, how much faster it is than what such
+a person has to use today.</p>
+
+<p>It is three things together:</p>
+
+<div class="grid2">
+  <div class="card">
+    <h4>An app</h4>
+    <p>Runs on a tablet. Shows Malayalam letters and moves a highlight through them. One button selects.</p>
+  </div>
+  <div class="card">
+    <h4>A switch box</h4>
+    <p>Two big buttons wired to a small circuit board that talks to the tablet over Bluetooth, pretending to be a keyboard.</p>
+  </div>
+  <div class="card">
+    <h4>An experiment</h4>
+    <p>A measurement of how many button presses each method costs, run on 113,324 units of real Malayalam.</p>
+  </div>
+  <div class="card">
+    <h4>And a finding</h4>
+    <p>Including one that proved your own starting idea wrong &mdash; which, done properly, is the most scientific part of the whole project.</p>
+  </div>
+</div>
+
+<h2><span class="n">2</span>Who this is for</h2>
+
+<p>Think of a person with cerebral palsy, or motor neurone disease, or a spinal
+cord injury high up the neck. Their mind is completely intact. They know exactly
+what they want to say. But they cannot speak clearly, and they cannot use a
+keyboard or a touchscreen, because they cannot reliably move their hands.</p>
+
+<p>What they often <em>do</em> have is <strong>one reliable movement</strong>. A
+tap of one finger. A press of the head against a cushion switch. A puff of air. A
+twitch of one cheek muscle that a sensor can see.</p>
+
+<p>That single movement is their entire connection to the world. Everything they
+will ever write has to come through it.</p>
+
+<div class="box accent">
+  <span class="tag">The person everyone has heard of</span>
+  <p><strong>Stephen Hawking typed exactly this way.</strong> After he lost his
+  voice in 1985, a cursor moved across rows and letters on his screen and he
+  squeezed a clicker in his hand to choose. At his best he managed
+  <strong>about 15 words a minute.</strong></p>
+  <p>Then his hands failed too. The clicker was replaced by an infrared sensor
+  mounted on his glasses, watching a small twitch in his cheek. <strong>Same
+  brain, same software, worse switch</strong> &mdash; and his speed collapsed to
+  <strong>one or two words a minute.</strong></p>
+  <p>Use this story. It explains in fifteen seconds why the number of presses
+  matters so much, and a judge will instantly understand it.</p>
+</div>
+
+<p>And here is the gap your project is about. All of this work &mdash; decades of
+it &mdash; was done for English. A Malayalam speaker gets the same tools with the
+Malayalam letters simply dropped in, with none of the optimisation. <strong>So they
+press more times to say the same thing.</strong></p>
+
+<h2><span class="n">3</span>How typing with one button works</h2>
+
+<p>This is the single most important thing to be able to explain, and the one
+thing nobody guesses on their own. Practise saying it out loud.</p>
+
+<div class="pitch">
+  <span class="tag">Say this, and hand them the switch</span>
+  <p>&ldquo;The screen asks you a yes-or-no question. <strong>Press means yes.
+  Waiting means no.</strong> That is the whole thing. Try it &mdash; type your own
+  name.&rdquo;</p>
+</div>
+
+<p>Why does waiting mean no? Because the person has only one button. They cannot
+press a separate &ldquo;no&rdquo; button. So the app uses <em>time itself</em> as
+the second answer: it shows you a group of letters for two seconds, and if you do
+nothing, it takes that as &ldquo;not this group&rdquo; and moves on.</p>
+
+<p>That is why the project counts two different things, and you must keep them
+apart in your head:</p>
+
+<table>
+  <tr><th>What it is</th><th>Why it matters</th></tr>
+  <tr>
+    <td><strong>Presses</strong><br>how many times the button is pushed</td>
+    <td>This is the <em>effort</em>. For someone who tires quickly, or whose
+    movement sometimes misfires, every press is expensive and risky.</td>
+  </tr>
+  <tr>
+    <td><strong>Scan steps</strong><br>how many groups the highlight moves through</td>
+    <td>This is the <em>time</em>. Each step takes about two seconds, so steps
+    are literally seconds of someone's life spent waiting.</td>
+  </tr>
+</table>
+
+<p>A good system reduces both. A careless comparison reduces one while quietly
+making the other worse &mdash; and that actually happened in this project, which
+is in section 8.</p>
+
+<h3>The twenty questions idea</h3>
+
+<p>Suppose you want one letter out of 50. The slow way is to show all 50 one at a
+time and wait for the press &mdash; on average 25 steps.</p>
+
+<p>The fast way is the game of twenty questions. Split the letters into two
+halves. Ask: &ldquo;is your letter in this half?&rdquo; Press means yes, wait
+means no. Either way you have <strong>thrown away half the alphabet in one
+answer.</strong> Do it again, and again &mdash; and about six answers get you to
+one letter out of 50.</p>
+
+<p>That is what the project calls a <strong>scan tree</strong>: a pre-planned
+sequence of yes-or-no questions that gets to any letter in as few answers as
+possible.</p>
+
+<h2><span class="n">4</span>Why Malayalam is harder than English</h2>
+
+<p>English has 26 letters in a flat row. You arrange them so that common letters
+need fewer questions, and you are finished. This was solved decades ago.</p>
+
+<p>Malayalam is not a flat row. It is an <strong>akshara</strong> script, and it
+has structure that English simply does not have.</p>
+
+<h3>One written shape is often several pieces</h3>
+
+<p>Take <span class="mal">ക്യ</span>. That is a single written shape, but it is
+built from three separate things: the consonant <span class="mal">ക</span>, a
+silencing mark called a <em>virama</em> (<span class="mal">്</span>), and then
+<span class="mal">യ</span>. A combination like this is a
+<strong>koottaksharam</strong> &mdash; a conjunct.</p>
+
+<p>So a single thing the reader sees as &ldquo;one letter&rdquo; can cost three
+separate selections. English never does this.</p>
+
+<h3>Vowels hang off consonants</h3>
+
+<p>In English, <em>k</em> and <em>a</em> are two letters side by side. In
+Malayalam, <span class="mal">ക</span> plus the vowel sign for <em>aa</em> becomes
+<span class="mal">കാ</span> &mdash; the vowel is a mark attached to the consonant,
+not a letter standing beside it. Some vowel signs even appear to the
+<em>left</em> of the consonant they belong to, though they are typed after it.</p>
+
+<h3>And there are rules about what can follow what</h3>
+
+<p>You cannot put a vowel sign straight after another vowel sign. You cannot put
+a vowel sign immediately after a virama. These are not style preferences &mdash;
+they produce text that is simply not Malayalam.</p>
+
+<div class="box warm">
+  <span class="tag">This is the number that is genuinely yours</span>
+  <p>Because of all this, the same sentence costs <strong>2.3 times more scan
+  steps</strong> in Malayalam than the equivalent effort in a flat alphabet. The
+  project calls this the <strong>akshara tax</strong>.</p>
+  <p><strong>Nobody has ever published that figure for any Indian script.</strong>
+  When a judge asks what is new here, this is one of your two best answers. It is
+  a real measurement of a real disadvantage that millions of people pay and
+  nobody had counted.</p>
+</div>
+
+<h2><span class="n">5</span>The clever part: asking good questions</h2>
+
+<p>Twenty questions is only fast if you ask <em>good</em> questions. Two ideas
+make the questions good, and both are easy to explain.</p>
+
+<h3>Idea one: common letters should need fewer questions</h3>
+
+<p>Do not split the alphabet into two equal <em>halves by count</em>. Split it
+into two halves of equal <em>likelihood</em>. Put the letters people actually use
+a lot where they can be reached in two or three answers, and push the rare ones
+deeper.</p>
+
+<p>This is the same mathematics that makes a ZIP file smaller: give short codes to
+common things and long codes to rare things. It is called <strong>Huffman
+coding</strong>, from 1952. You did not invent it, and you should say so.</p>
+
+<h3>Idea two: the questions should change depending on what came before</h3>
+
+<p>After you type <span class="mal">ക</span>, what comes next is not random. Some
+things are very likely, some are impossible. So the app <strong>rebuilds the
+entire question tree after every single selection</strong>, using what it learned
+from real Malayalam about what usually follows what.</p>
+
+<p>Where did it learn that? From <strong>113,324 units of real Malayalam</strong>
+taken from Malayalam Wikipedia &mdash; about 11,170 words. The app is not using
+your guesses about the language. It counted.</p>
+
+<h3>Idea three, and this is the big one: guess the whole word</h3>
+
+<p>Why ask about letters at all, if you can offer whole words? Once a couple of
+letters are in, the app offers complete words and likely next words. Choosing a
+whole word from a list costs two or three presses instead of twenty.</p>
+
+<p>This turns out to be the biggest win in the entire project &mdash; bigger than
+anything to do with the clever tree. More on that in section 8, because it is also
+the thing you must be careful not to take credit for.</p>
+
+<h2><span class="n">6</span>What is actually in the box</h2>
+
+<h3>The app</h3>
+
+<ul>
+  <li><strong>Three layers:</strong> Malayalam letters, numbers (123), and English
+  letters (ABC). All reachable using only the switch &mdash; no touching the screen.</li>
+  <li><strong>Word prediction</strong> that learns from use.</li>
+  <li><strong>Speech.</strong> It speaks the finished sentence aloud using the
+  tablet's own Malayalam voice, with no internet needed. Five online voice
+  services can be plugged in as an upgrade, and anything they produce is saved so
+  it still works offline afterwards.</li>
+  <li><strong>Quick phrases</strong> &mdash; his own common sentences, about three
+  presses each instead of four minutes.</li>
+  <li><strong>A tutorial</strong> that walks a new user through pressing, waiting,
+  one letter, their name, their age, and sending it.</li>
+  <li><strong>It works with no internet at all.</strong> This matters: fair venues
+  usually have no usable WiFi, and a demo that needs a network scores nothing.</li>
+</ul>
+
+<h3>The hardware</h3>
+
+<p>An <strong>ESP32</strong> &mdash; a small, cheap circuit board with Bluetooth
+built in. Two large buttons are wired to it. The board pretends to be a
+<strong>Bluetooth keyboard</strong>, so when a button is pressed the tablet simply
+receives a keypress.</p>
+
+<div class="box accent">
+  <span class="tag">Why pretending to be a keyboard is a good design</span>
+  <p>Because the switches then work in <em>every</em> app on the tablet, not just
+  yours. That is exactly how real commercial switch interfaces for disabled users
+  behave &mdash; devices like the Blue2 and the Hook+. You did not do something
+  odd; you did the standard thing, deliberately.</p>
+  <p>If a judge asks &ldquo;could a real user use their own switch?&rdquo; the
+  answer is yes &mdash; add a 3.5&nbsp;mm socket, which is the standard connector
+  in this field, and their existing switch plugs straight in.</p>
+</div>
+
+<p>Two buttons, three commands: button one selects, button two deletes, and
+holding button two (or pressing both together) speaks the sentence.</p>
+
+<p>The board needs nothing but <strong>5&nbsp;volts of power</strong> &mdash; a
+phone charger or a power bank. No laptop is involved in using it.</p>
+
+<h2><span class="n">7</span>The numbers, and what they mean</h2>
+
+<p>This is the heart of the poster. The test is typing
+<span class="mal">എന്റെ പേര് ആദിത്യ</span> &mdash; &ldquo;my name is Adithya&rdquo;
+&mdash; which is 17 units of Malayalam.</p>
+
+<table>
+  <tr>
+    <th>Method</th>
+    <th class="num">Scan steps</th>
+    <th class="num">Presses</th>
+    <th class="num">Time at 2 s/step</th>
+  </tr>
+  <tr class="dim">
+    <td><strong>Row&ndash;column</strong><br>what a Malayalam user gets today</td>
+    <td class="num">178</td><td class="num">34</td><td class="num">5 min 56 s</td>
+  </tr>
+  <tr>
+    <td><strong>AksharaScan</strong>, letter by letter</td>
+    <td class="num">77</td><td class="num">44</td><td class="num">2 min 34 s</td>
+  </tr>
+  <tr class="hero">
+    <td><strong>AksharaScan + word prediction</strong></td>
+    <td class="num">33</td><td class="num">18</td><td class="num">1 min 6 s</td>
+  </tr>
+</table>
+
+<p><strong>Five minutes and fifty-six seconds, down to one minute and six
+seconds.</strong> For three words. That is the sentence a judge should hear.</p>
+
+<p>Now look at the middle row carefully, because it contains something awkward and
+you should understand it before a judge spots it. Letter-by-letter AksharaScan cut
+the <em>steps</em> from 178 to 77 &mdash; but it <em>raised the presses</em> from
+34 to 44.</p>
+
+<div class="box warm">
+  <span class="tag">Understand this, it is a real trade-off</span>
+  <p>A question tree is <strong>press-expensive and fast</strong>. Row&ndash;column
+  is <strong>press-cheap and slow</strong>. You are trading button presses for
+  time.</p>
+  <p>For someone who tires easily, more presses might genuinely be the worse
+  deal &mdash; and the honest position is to say so. <strong>Word prediction is
+  what resolves it:</strong> 18 presses against the old 34, and far fewer steps
+  too. Fewer of both. But only with prediction switched on.</p>
+</div>
+
+<h2 class="pb"><span class="n">8</span>The honest part: you were wrong</h2>
+
+<p>Read this section twice. It is the part most likely to win you respect from a
+serious judge, and the part most likely to go badly if you have not thought about
+it.</p>
+
+<h3>What you set out to prove</h3>
+
+<p>The original idea was this. Malayalam has hard rules about what cannot follow
+what. So: build the question tree so that <strong>illegal letters are removed
+entirely</strong> at every step. Never even offer something that cannot happen.
+That should save a lot of presses.</p>
+
+<p>It is a sensible idea. It sounds obviously right.</p>
+
+<h3>What you actually measured</h3>
+
+<div class="box red">
+  <span class="tag">The result</span>
+  <p>Removing the illegal letters saved <strong>0.0%</strong>. Nothing. Not a
+  little &mdash; nothing at all.</p>
+  <p>And this was not one unlucky test. It held across <strong>eight separate
+  experiments</strong>: on your hand-written rules and on rules measured from real
+  Wikipedia text; with legal sets ranging from 32% to 63% of the alphabet; on
+  clean typing and with simulated mistakes; on single pieces and on whole
+  conjuncts. <strong>Same answer every time.</strong></p>
+</div>
+
+<h3>Why &mdash; and this is the interesting bit</h3>
+
+<p>Because the tree had already solved the problem by accident.</p>
+
+<p>Remember idea one: rare things get pushed deep into the tree. An <em>illegal</em>
+letter is just an extremely rare thing &mdash; so the tree had already buried it so
+deep that the highlight practically never reached it. Deleting something the user
+was never going to arrive at saves nothing.</p>
+
+<div class="pitch">
+  <span class="tag">Say it like this</span>
+  <p>&ldquo;Huffman coding already gives improbable symbols very long codes. So
+  forbidding them outright changes almost nothing &mdash; the scanner was never
+  getting there anyway. <strong>Removing an impossible option only helps if your
+  model wrongly believed it was likely.</strong>&rdquo;</p>
+</div>
+
+<h3>Why this is a good result and not a failure</h3>
+
+<p>A judge may try to make this sound like your project failed. It did not, and
+here is why &mdash; in the order you should say it.</p>
+
+<ol class="steps">
+  <li><strong>You predicted, you built, you measured, and you reported what you
+  found.</strong> That is science. Announcing only results that flatter you is the
+  opposite of science. Most projects at a fair have never tested their own central
+  claim hard enough to be able to find it wrong.</li>
+
+  <li><strong>You can explain <em>why</em>, mathematically.</strong> A negative
+  result with a mechanism is a contribution; a negative result with a shrug is
+  not. You have the mechanism.</li>
+
+  <li><strong>You found out what actually matters instead.</strong> The
+  measurement ranked the effects honestly: word prediction removes 57% of the
+  steps, using a question tree at all is the next biggest, a context model after
+  that &mdash; and the idea you started with, about 0%.</li>
+
+  <li><strong>Three real findings survived, and they do not need the original idea
+  to be true.</strong> They are below.</li>
+</ol>
+
+<h3>What survived</h3>
+
+<table>
+  <tr><th>Finding</th><th>Why it counts</th></tr>
+  <tr>
+    <td><strong>The akshara tax is 2.3&times;</strong></td>
+    <td>Malayalam costs 2.3 times the scan steps. Never published for any
+    Brahmic script. A real, new measurement.</td>
+  </tr>
+  <tr>
+    <td><strong>Break letters apart, do not treat them as whole blocks &mdash;
+    19% better</strong></td>
+    <td>A design recommendation with a number attached, which anyone building a
+    Malayalam AAC app can use tomorrow.</td>
+  </tr>
+  <tr>
+    <td><strong>Legality is free</strong></td>
+    <td>It needs no text corpus at all &mdash; just the grammar of the script,
+    which a linguist can write down in an afternoon. For the roughly twenty Indian
+    languages with no usable corpus, that makes it worth having even though it
+    adds nothing where a corpus exists.</td>
+  </tr>
+  <tr class="hero">
+    <td><strong>The negative result itself</strong></td>
+    <td>With its reason. This stops the next person wasting a year on the same
+    idea.</td>
+  </tr>
+</table>
+
+<div class="box green">
+  <span class="tag">One more finding worth having ready</span>
+  <p>When the rules were learned from Wikipedia instead of written by hand,
+  something revealing happened. A combination that is genuinely rare in real
+  Malayalam appeared <strong>3</strong> times. A combination that was pure
+  <em>junk</em> &mdash; caused by Wikipedia's formatting splitting words in half
+  &mdash; appeared <strong>57</strong> times.</p>
+  <p><strong>The noise was 19 times more common than the fact.</strong> So no
+  amount of &ldquo;ignore anything rare&rdquo; could separate them. Only a
+  structural rule could.</p>
+  <p>The lesson: <em>&ldquo;just learn the rules from data&rdquo; sounds clean and
+  is not. A constraint learned from a corpus is only as good as the tool that split
+  the text into pieces &mdash; and when it is wrong, it looks exactly like being
+  right.</em> That is a genuinely sophisticated point and it is yours.</p>
+</div>
+
+<h2 class="pb"><span class="n">9</span>The first thirty seconds at the table</h2>
+
+<p>Judges walk up with no context and little time. Do not start with scan trees or
+Malayalam orthography. Do this instead.</p>
+
+<div class="chk">
+  <div class="chk-h">In order, every time</div>
+  <ol>
+    <li><strong>One sentence about the person.</strong> &ldquo;Some people can
+    move only one muscle. This is how they write.&rdquo;</li>
+    <li><strong>Put the switch in their hand.</strong> Do not explain first. Hand
+    it over.</li>
+    <li><strong>Say the one rule.</strong> &ldquo;It asks you yes or no.
+    <strong>Press for yes. Wait for no.</strong>&rdquo;</li>
+    <li><strong>Let them type their own name.</strong> They will be slow. That is
+    the point &mdash; they are feeling the problem in their own thumb.</li>
+    <li><strong>Now show the counter.</strong> Point at the press count and the
+    timer. Then switch on prediction and let them do it again.</li>
+    <li><strong>Only now, the science.</strong> The 2.3&times; tax, the 178-to-33
+    comparison, and the negative result.</li>
+  </ol>
+</div>
+
+<p>The reason this order works: once someone has felt how slow it is, every number
+you say afterwards lands on an experience instead of on nothing.</p>
+
+<div class="box accent">
+  <span class="tag">The single line to rehearse</span>
+  <p>&ldquo;It asks you yes or no. <strong>Press for yes. Wait for no.</strong>&rdquo;</p>
+  <p>Nobody guesses that waiting is an answer. Say it before anything else, and
+  say it exactly the same way every time.</p>
+</div>
+
+<h2><span class="n">10</span>Words you will need to explain</h2>
+
+<p>Judges will use some of these at you, and you will need others to answer. Keep
+the plain-words version ready &mdash; never the dictionary version.</p>
+
+<dl>
+  <dt>AAC</dt>
+  <dd>Augmentative and Alternative Communication. Any tool that helps someone
+  communicate when speech does not work. Your project is an AAC device.</dd>
+
+  <dt>Scanning</dt>
+  <dd>Moving a highlight through choices so a person with one button can pick one.
+  The method, not the project.</dd>
+
+  <dt>Switch</dt>
+  <dd>The one button. In this field it means any single input &mdash; a button, a
+  puff of air, a blink sensor.</dd>
+
+  <dt>Scan tree</dt>
+  <dd>The planned sequence of yes-or-no questions. A good tree asks fewer
+  questions to reach common letters.</dd>
+
+  <dt>Row&ndash;column scanning</dt>
+  <dd>The old method you compare against: highlight each row until the user
+  presses, then each letter in that row. It is what Android's accessibility
+  tools actually ship today, which is why it is the fair baseline.</dd>
+
+  <dt>Akshara</dt>
+  <dd>The natural writing unit of Malayalam and related scripts &mdash; roughly a
+  consonant with its vowel attached. The thing a reader perceives as one letter.</dd>
+
+  <dt>Koottaksharam / conjunct</dt>
+  <dd>Two or more consonants fused into one shape, like
+  <span class="mal">ക്യ</span>. One shape, several pieces to type.</dd>
+
+  <dt>Virama</dt>
+  <dd>The small mark (<span class="mal">്</span>) that removes a consonant's
+  built-in vowel. It is what glues conjuncts together.</dd>
+
+  <dt>Huffman coding</dt>
+  <dd>A 1952 method for giving short codes to common things and long codes to rare
+  things. The same idea that makes files compress. Borrowed, not invented here.</dd>
+
+  <dt>Corpus</dt>
+  <dd>A large pile of real text used to count what is common. Yours is Malayalam
+  Wikipedia &mdash; 113,324 units.</dd>
+
+  <dt>Word prediction</dt>
+  <dd>Offering whole words once a couple of letters are typed. The biggest single
+  effect measured in the project, and the oldest idea in it.</dd>
+
+  <dt>Bluetooth HID</dt>
+  <dd>The standard that lets a device present itself as a keyboard or mouse. HID
+  means Human Interface Device. It is why your switches work in every app.</dd>
+
+  <dt>ESP32</dt>
+  <dd>The small cheap circuit board with built-in Bluetooth that the buttons are
+  wired to.</dd>
+
+  <dt>Low-resource language</dt>
+  <dd>A language with little digital text available. Most Indian languages are
+  low-resource, which is exactly why the &ldquo;legality is free&rdquo; finding
+  matters.</dd>
+</dl>
+
+<h2 class="pb"><span class="n">11</span>Questions judges ask</h2>
+
+<p>Answer briefly first, then stop. Let them ask for more. A short confident
+answer beats a long nervous one.</p>
+
+<div class="qa">
+  <div class="qn">What does your project do?</div>
+  <p class="say">&ldquo;It lets someone who can move only one muscle write
+  Malayalam, and it does it in about a fifth of the time the current method
+  takes.&rdquo;</p>
+</div>
+
+<div class="qa">
+  <div class="qn">Who would actually use this?</div>
+  <p>People with cerebral palsy, motor neurone disease, advanced multiple
+  sclerosis, or high spinal injuries &mdash; where the mind is fine and the body
+  is not. Mention Stephen Hawking; it makes it concrete immediately.</p>
+</div>
+
+<div class="qa">
+  <div class="qn">Doesn't this already exist?</div>
+  <p class="say">&ldquo;One-button scanning exists and is decades old. It has been
+  optimised for English for decades. For Malayalam, nobody has done that
+  work &mdash; the letters were swapped in and the optimisation was not. I measured
+  the penalty that leaves behind, and it is 2.3 times.&rdquo;</p>
+  <p>Be very clear that you are not claiming to have invented scanning. You are
+  claiming to have measured and reduced a disadvantage specific to Malayalam.</p>
+</div>
+
+<div class="qa">
+  <div class="qn">Why not use eye tracking, or a brain interface?</div>
+  <p>Cost and reliability. An eye tracker is expensive and needs calibration and
+  decent lighting. Brain-computer interfaces are research equipment with poor
+  accuracy and long training times. A switch is a few hundred rupees, works in any
+  light, never needs calibration, and is what the overwhelming majority of real
+  users actually have. <strong>Making the cheap thing better helps more people than
+  making the expensive thing exist.</strong></p>
+</div>
+
+<div class="qa">
+  <div class="qn">Why not just use voice recognition?</div>
+  <p>These users often cannot produce reliable speech &mdash; that is frequently the
+  reason they need the device at all.</p>
+</div>
+
+<div class="qa">
+  <div class="qn">What is new here? What is your actual contribution?</div>
+  <p>Have exactly three answers, in this order:</p>
+  <ol>
+    <li>The <strong>akshara tax of 2.3&times;</strong> &mdash; measured for the
+    first time for any script of this family.</li>
+    <li><strong>Decompose, do not cluster &mdash; 19%.</strong> A usable design
+    recommendation with a number.</li>
+    <li>A <strong>negative result with its mechanism</strong>: hard legality
+    constraints buy nothing, and here is the information-theoretic reason.</li>
+  </ol>
+</div>
+
+<div class="qa">
+  <div class="qn">Did your hypothesis work?</div>
+  <p>Answer this one head-on. Do not soften it.</p>
+  <p class="say">&ldquo;No. I predicted that removing illegal letters from the tree
+  would save presses. I measured it eight different ways and it saves zero. The
+  reason is that Huffman coding had already pushed those letters so deep that the
+  scanner never reached them &mdash; so deleting them changes nothing. I reported
+  it because I had pre-registered that I would report it either way.&rdquo;</p>
+  <p>A judge who hears that delivered calmly will trust every other number on your
+  poster.</p>
+</div>
+
+<div class="qa">
+  <div class="qn">So isn't your project a failure?</div>
+  <p class="say">&ldquo;The hypothesis failed. The project measured it correctly
+  and explained why, and it also produced two measurements nobody had made before.
+  A result that stops the next person repeating my mistake is worth having.&rdquo;</p>
+</div>
+
+<div class="qa">
+  <div class="qn">How do you know your numbers are right?</div>
+  <p>Three independent checks, and say all three:</p>
+  <ul>
+    <li>The model is <strong>measured from 113,324 units of real Malayalam</strong>,
+    not guessed.</li>
+    <li>There are <strong>131 automated tests</strong>, including one that forces
+    the live press counter on the tablet to agree exactly with the offline
+    calculation &mdash; so the number a judge sees cannot drift from the number in
+    the write-up.</li>
+    <li>The same conclusion appears in <strong>three independently built
+    models</strong> with legal sets from 32% to 63%.</li>
+  </ul>
+</div>
+
+<div class="qa">
+  <div class="qn">What are you comparing against? Isn't your baseline unfair?</div>
+  <p class="say">&ldquo;Row&ndash;column scanning, which is what Android's own
+  accessibility tools ship today. It is what a Malayalam user would really be
+  using, not a weak version I invented to beat.&rdquo;</p>
+</div>
+
+<div class="qa">
+  <div class="qn">Where did the Malayalam data come from?</div>
+  <p>Malayalam Wikipedia, about 450 random articles, fetched through their official
+  interface. It is licensed CC BY-SA 4.0 and credited in the project's notice file.
+  Say openly that it is Wikipedia &mdash; and that cleaning it was harder than
+  downloading it, which leads into the 57-versus-3 noise story if they are
+  interested.</p>
+</div>
+
+<div class="qa">
+  <div class="qn">Which part is the biggest improvement?</div>
+  <p>Word prediction &mdash; 57% of the steps. And then immediately add:
+  <strong>&ldquo;which is also the least novel part. Intel's biggest win for
+  Stephen Hawking was prediction too.&rdquo;</strong></p>
+  <p>Volunteering this is important. If a judge works it out and you look as
+  though you were hiding it, you lose the room.</p>
+</div>
+
+<div class="qa">
+  <div class="qn">Could a real disabled person use this today?</div>
+  <p>Be precise and honest. It works, it is installed on a tablet, it speaks, and
+  it runs with no internet. But <strong>it has not been tested with any disabled
+  user.</strong> That is the obvious and necessary next step, it needs ethical
+  approval, and it is what you would do next.</p>
+  <p>Never claim it has been user-tested. One follow-up question destroys that.</p>
+</div>
+
+<div class="qa">
+  <div class="qn">Does it work for other languages?</div>
+  <p>The method is for akshara scripts generally &mdash; Hindi, Tamil, Kannada,
+  Telugu, Bengali are built the same way. The approach transfers; the measurements
+  would need redoing per script. The project uses English as a deliberate control,
+  precisely because English should show no akshara tax.</p>
+</div>
+
+<div class="qa">
+  <div class="qn">How much did it cost?</div>
+  <p>The ESP32 and two buttons are a few hundred rupees. The tablet is a normal
+  tablet. The app is free and the code is public. Low cost is a genuine strength
+  here: AAC devices routinely cost lakhs, and that is why most Indian users have
+  none.</p>
+</div>
+
+<div class="qa">
+  <div class="qn">What was the hardest part?</div>
+  <p>A good honest answer is the data cleaning: discovering that corpus
+  <em>noise</em> appeared 57 times while the real rare pattern appeared 3 times, so
+  no frequency cutoff could separate them. Or the one where the app typed a letter
+  by itself when nobody pressed anything &mdash; the scanner reached a choice with
+  zero presses, which had to be restructured.</p>
+</div>
+
+<div class="qa">
+  <div class="qn">What would you do next?</div>
+  <ul>
+    <li>Test with actual users who rely on switches.</li>
+    <li>Plot how much the legality rules help as the amount of available text
+    shrinks &mdash; the prediction is that it matters most where there is least
+    text, which is the real situation for Indian languages.</li>
+    <li>Offer the scan trees to an existing Malayalam AAC app so real users get
+    them.</li>
+  </ul>
+</div>
+
+<div class="qa">
+  <div class="qn">Did you build this yourself?</div>
+  <p>Say what is true, clearly and without embarrassment: what you designed and
+  decided, what you measured, and what is borrowed &mdash; Huffman coding from 1952,
+  the Wikipedia text, the standard Bluetooth keyboard libraries, and prior research
+  on scan trees. Section 15 lists it. Judges respect a clear boundary far more than
+  a vague claim to have done everything.</p>
+</div>
+
+<h2><span class="n">12</span>Four traps to avoid</h2>
+
+<div class="box red">
+  <span class="tag">Trap 1 &mdash; saying &ldquo;2.3 times faster&rdquo;</span>
+  <p>The 2.3&times; is <strong>scan steps</strong>, which is time. Letter by letter
+  it actually needed <strong>more presses</strong> than the baseline: 44 against 34.
+  Say <em>&ldquo;2.3 times fewer scan steps&rdquo;</em>, and if you want the clean
+  headline use the prediction row: <strong>178 steps and 34 presses down to 33 and
+  18.</strong></p>
+</div>
+
+<div class="box red">
+  <span class="tag">Trap 2 &mdash; defending the hypothesis</span>
+  <p>If a judge presses on the legality idea, do not argue for it. It measured
+  zero, eight times. Agree, explain the mechanism, and move to what survived. A
+  student who defends a disproved claim looks worse than one who never tested it.</p>
+</div>
+
+<div class="box red">
+  <span class="tag">Trap 3 &mdash; implying a real user has tried it</span>
+  <p>Nobody with a disability has tested this. If asked, say so plainly and call it
+  the next step. Any exaggeration here is both dishonest and easy to catch.</p>
+</div>
+
+<div class="box red">
+  <span class="tag">Trap 4 &mdash; letting prediction look like your invention</span>
+  <p>Prediction is the largest effect and the oldest idea. Volunteer that, early.
+  Your contribution is the akshara measurement and the honest negative result.</p>
+</div>
+
+<h2><span class="n">13</span>What you should admit freely</h2>
+
+<p>Saying these before you are asked makes you look like a scientist rather than a
+salesperson. Every one of them is already written down in the project.</p>
+
+<ul>
+  <li>The central hypothesis was <strong>wrong</strong>, and it is reported as
+  wrong.</li>
+  <li>The <strong>largest effect belongs to someone else</strong> &mdash; word
+  prediction, known since the 1980s.</li>
+  <li><strong>No disabled user has tested it.</strong></li>
+  <li>Letter by letter, it <strong>costs more presses</strong> than the baseline.
+  Only prediction fixes that.</li>
+  <li>The akshara tax of 2.3&times; comes from <strong>simulation</strong>, not from
+  timing real people.</li>
+  <li>The corpus is <strong>Wikipedia</strong>, which is not how people chat. Real
+  conversation would give different letter frequencies.</li>
+</ul>
+
+<h2><span class="n">14</span>If something breaks</h2>
+
+<table>
+  <tr><th>Problem</th><th>What to do</th></tr>
+  <tr>
+    <td>Switch does nothing</td>
+    <td>Check the ESP32 has power (a light is on), then Bluetooth on the tablet.
+    Fall back to the <strong>space bar</strong> or screen taps &mdash; the app works
+    without the hardware.</td>
+  </tr>
+  <tr>
+    <td>It types on its own</td>
+    <td>A button is stuck closed. Unplug the board; demo with the keyboard
+    instead.</td>
+  </tr>
+  <tr>
+    <td>No sound</td>
+    <td>Tablet volume, then <strong>Settings &rarr; Voice &rarr; Check this
+    device's voices</strong>. The app types fine without speech &mdash; say so and
+    carry on.</td>
+  </tr>
+  <tr>
+    <td>Scanning feels too fast or slow</td>
+    <td>Speed control is top-left on the compose screen, changeable mid-sentence.
+    Slower is better for a first-time judge.</td>
+  </tr>
+  <tr>
+    <td>Numbers look wrong between judges</td>
+    <td>Press <strong>&#8635; Restart</strong>, top right. It clears the sentence,
+    the press count and the timer.</td>
+  </tr>
+  <tr>
+    <td>No WiFi at the venue</td>
+    <td>Does not matter. Everything essential runs offline by design.</td>
+  </tr>
+</table>
+
+<div class="box accent">
+  <span class="tag">Before you leave home</span>
+  <p>Charge the tablet. Bring the power bank, both cables, and spare buttons if you
+  have them. Put the tablet in <strong>aeroplane mode and rehearse the whole demo
+  offline</strong> &mdash; if anything depends on the network you want to find out at
+  home, not at the table.</p>
+</div>
+
+<h2><span class="n">15</span>What is yours and what is borrowed</h2>
+
+<p>Have this boundary clear in your head. If a judge asks and you answer
+confidently, it reflects well on everything else.</p>
+
+<table>
+  <tr><th>Yours</th><th>Borrowed, and credited</th></tr>
+  <tr>
+    <td>
+      The measurement of the akshara tax (2.3&times;)<br>
+      The decompose-vs-cluster comparison (19%)<br>
+      The eight experiments and the negative result<br>
+      The corpus-noise finding (57 against 3)<br>
+      The app, the scan-tree code, the firmware<br>
+      The decision to report a disproved hypothesis
+    </td>
+    <td>
+      Huffman coding &mdash; Huffman, 1952<br>
+      Optimal scan trees &mdash; Higger and others, 2016<br>
+      Context-conditional trees &mdash; Roark and others, 2013<br>
+      Scan-step definitions &mdash; MacKenzie, 2012<br>
+      Word prediction &mdash; standard in AAC since the 1980s<br>
+      Malayalam text &mdash; Malayalam Wikipedia, CC BY-SA 4.0<br>
+      Malayalam font &mdash; Noto, SIL Open Font Licence<br>
+      Bluetooth keyboard library, app wrapper &mdash; open source
+    </td>
+  </tr>
+</table>
+
+<div class="pitch">
+  <span class="tag">The last thing to remember</span>
+  <p>You are not trying to sound like you invented everything. You are trying to
+  sound like someone who <strong>asked a precise question, built the apparatus to
+  answer it, measured honestly, and knows exactly which parts of the answer are
+  new.</strong></p>
+  <p>That is what a good judge is actually looking for, and it is a much easier
+  thing to be than an inventor of everything.</p>
+</div>
+
+<footer>
+  AksharaScan &mdash; Presenter's Guide &middot; 7 October 2026 &middot;
+  Numbers taken from <code>app/FINDINGS.md</code> (findings 001&ndash;008) and the
+  measured model in <code>app/data/meta.json</code>.
+  Code and data: <b>github.com/adithyamandody/adithya</b>
+</footer>
+
+</body>
+</html>

@@ -51,6 +51,11 @@
       "source": "/setup",
       "destination": "https://github.com/adithyamandody/adithya/blob/main/SETUP.md",
       "permanent": false
+    },
+    {
+      "source": "/guide",
+      "destination": "https://github.com/adithyamandody/adithya/raw/main/AksharaScan-Guide.pdf",
+      "permanent": false
     }
   ]
 }

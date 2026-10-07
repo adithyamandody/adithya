@@ -42,6 +42,8 @@ A negative result is still a finding, and is pre-registered as reportable either
 ├── estimate.py           first-pass press-count model (seed for the simulator)
 ├── aksharascan.html      the proposal, source for the PDF
 ├── AksharaScan.pdf       7-page proposal
+├── GUIDE.html            presenter's guide, source for the PDF
+├── AksharaScan-Guide.pdf 15-page presenter's guide — plain-words explanation and judge Q&A
 └── app/
     ├── PLAN.md           app build plan — decided, not an options paper
     ├── index.html        the PWA
