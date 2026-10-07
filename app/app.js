@@ -13,9 +13,11 @@
 import { ScanSession, simulate, decompose } from './scan.js';
 import { makeClock } from './clock.js';
 import { parseMeds, dueNow, nextUp, dayPlan, doseKey, hhmmOf, spokenReminder } from './meds.js';
+import { makeBook, clampAt, progress, remainingSeconds, humanTime, PACES, paceById } from './reader.js';
 import { STEPS, sentenceFor, makeState, step as tourStep, isLast } from './tour.js';
 import { PROVIDERS, say, scriptOf, routeFor, cacheStats, cacheClear,
-         listVoices, describeVoices, pickBackend, openVoiceInstall } from './voice.js';
+         listVoices, describeVoices, pickBackend, openVoiceInstall,
+         stopSpeaking } from './voice.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -1249,6 +1251,170 @@ function wireMeds() {
   setInterval(paintMeds, 20000);
 }
 
+/* ═══════════════════════ book reader ══════════════════════
+ * Load a PDF, hear it a sentence at a time, steer with the switches.
+ */
+const RD = { book: null, at: 0, playing: false, pace: 'normal', title: '', stop: false };
+
+/* pdf.js is vendored rather than imported from node_modules: there is no
+   bundler here, so the browser loads it directly. Loaded on demand so that
+   1.6 MB is not fetched by someone who never opens a book. */
+let pdfLib = null;
+async function pdfjs() {
+  if (pdfLib) return pdfLib;
+  const lib = await import('./vendor/pdf.min.mjs');
+  lib.GlobalWorkerOptions.workerSrc = new URL('./vendor/pdf.worker.min.mjs', import.meta.url).href;
+  pdfLib = lib;
+  return lib;
+}
+
+async function textFromPdf(file, onPage) {
+  const lib = await pdfjs();
+  const doc = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const out = [];
+  for (let n = 1; n <= doc.numPages; n++) {
+    const page = await doc.getPage(n);
+    const content = await page.getTextContent();
+    /* Join with spaces, and let a y-position change end the line — otherwise
+       every PDF line runs into the next word. */
+    let last = null, line = [];
+    const lines = [];
+    for (const item of content.items) {
+      const y = item.transform ? Math.round(item.transform[5]) : null;
+      if (last !== null && y !== null && Math.abs(y - last) > 2) { lines.push(line.join('')); line = []; }
+      line.push(item.str);
+      if (y !== null) last = y;
+    }
+    if (line.length) lines.push(line.join(''));
+    out.push(lines.join('\n'));
+    if (onPage) onPage(n, doc.numPages);
+  }
+  return out.join('\n\n');
+}
+
+function rdOpen(text, title) {
+  const book = makeBook(text);
+  if (!book.total) { $('#rd-status').textContent = 'No readable text found in that file.'; return; }
+  RD.book = book; RD.at = 0; RD.title = title || 'Book'; RD.playing = false;
+  $('#rd-empty').hidden = true;
+  $('#rd-live').hidden = false;
+  paintRead();
+}
+
+function rdClose() {
+  rdPause();
+  RD.book = null;
+  $('#rd-empty').hidden = false;
+  $('#rd-live').hidden = true;
+  $('#rd-status').textContent = '';
+}
+
+function paintRead() {
+  const b = RD.book;
+  if (!b) return;
+  const rate = paceById(RD.pace).rate;
+  $('#rd-title').textContent = RD.title;
+  $('#rd-now').textContent = b.pieces[RD.at] || '';
+  $('#rd-next').textContent = b.pieces[RD.at + 1] || '— end of book —';
+  $('#rd-bar').style.width = progress(b, RD.at) + '%';
+  $('#rd-pos').textContent =
+    `${RD.at + 1} of ${b.total} · ${progress(b, RD.at)}% · about `
+    + `${humanTime(remainingSeconds(b, RD.at, rate))} left`;
+  $('#rd-play').textContent = RD.playing ? '❚❚ Pause' : '▶ Play';
+}
+
+/* One sentence, then the next. Each piece is short enough that a press can
+   interrupt between pieces — which is what makes pause feel immediate. */
+async function rdSpeakLoop() {
+  while (RD.playing && RD.book && RD.at < RD.book.total) {
+    const piece = RD.book.pieces[RD.at];
+    paintRead();
+    try {
+      await say(piece, S, { rate: paceById(RD.pace).rate });
+    } catch {
+      /* A failure here is usually no voice installed. Stop rather than spin
+         through the whole book in silence. */
+      RD.playing = false;
+      flash('Cannot speak — check Settings → Voice');
+      break;
+    }
+    if (!RD.playing) break;             // paused while that sentence played
+    if (RD.at >= RD.book.total - 1) { RD.playing = false; flash('End of book'); break; }
+    RD.at++;
+  }
+  paintRead();
+}
+
+function rdPlay() {
+  if (!RD.book || RD.playing) return;
+  RD.playing = true;
+  paintRead();
+  rdSpeakLoop();
+}
+function rdPause() {
+  RD.playing = false;
+  stopSpeaking();
+  paintRead();
+}
+function rdToggle() { RD.playing ? rdPause() : rdPlay(); }
+
+/* Back matters more than forward: attention wanders and a carer interrupts,
+   so the scarce control is the one that recovers a missed sentence. */
+function rdBack() {
+  if (!RD.book) return;
+  const was = RD.playing;
+  rdPause();
+  RD.at = clampAt(RD.book, RD.at - 1);
+  paintRead();
+  if (was) rdPlay();
+}
+function rdFwd() {
+  if (!RD.book) return;
+  const was = RD.playing;
+  rdPause();
+  RD.at = clampAt(RD.book, RD.at + 1);
+  paintRead();
+  if (was) rdPlay();
+}
+
+SWITCH_VIEWS.read = { select: rdToggle, back: rdBack };
+
+function wireRead() {
+  $('#rd-pace').innerHTML = PACES
+    .map(p => `<option value="${p.id}"${p.id === RD.pace ? ' selected' : ''}>${p.label}</option>`)
+    .join('');
+  $('#rd-pace').onchange = e => { RD.pace = e.target.value; paintRead(); };
+
+  $('#rd-play').onclick = rdToggle;
+  $('#rd-back').onclick = rdBack;
+  $('#rd-fwd').onclick = rdFwd;
+  $('#rd-close').onclick = rdClose;
+
+  $('#rd-paste-go').onclick = () => {
+    const txt = $('#rd-paste').value.trim();
+    if (txt) rdOpen(txt, 'Pasted text');
+  };
+
+  $('#rd-file').onchange = async e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    $('#rd-status').textContent = 'Opening…';
+    try {
+      if (/\.pdf$/i.test(f.name) || f.type === 'application/pdf') {
+        const text = await textFromPdf(f, (n, total) => {
+          $('#rd-status').textContent = `Reading page ${n} of ${total}…`;
+        });
+        $('#rd-status').textContent = '';
+        rdOpen(text, f.name);
+      } else {
+        rdOpen(await f.text(), f.name);
+      }
+    } catch (err) {
+      $('#rd-status').textContent = `Could not open that file: ${err.message}`;
+    }
+  };
+}
+
 function save() {
   try {
     localStorage.setItem('aksharascan', JSON.stringify(
@@ -1292,6 +1458,7 @@ function restore() {
   restore();
   wire();
   wireMeds();
+  wireRead();
   paintText();
   if (firstRun()) $('#help').classList.add('on');
   else $('#help').classList.remove('on');

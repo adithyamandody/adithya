@@ -350,3 +350,26 @@ input[type=password]{
 #med-text{width:100%;background:var(--panel);color:var(--ink);
           border:1px solid var(--line);border-radius:8px;padding:10px;
           font-family:inherit;font-size:15px;line-height:1.5}
+
+/* ── reader ────────────────────────────────────────────────────────────────
+   The current sentence is the whole interface. It is set large because the
+   listener may also be reading along, and because a carer across the room
+   should be able to see where the book has got to. */
+#read h3{margin:0 0 6px;font-size:18px}
+#rd-file{font-size:15px;padding:10px 0}
+#rd-paste{width:100%;background:var(--panel);color:var(--ink);border:1px solid var(--line);
+          border-radius:8px;padding:10px;font-family:inherit;font-size:15px;margin:8px 0}
+#rd-title{font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+#rd-now{font-size:30px;line-height:1.45;margin:0 0 14px;min-height:2.2em}
+#rd-next{font-size:16px;line-height:1.5;opacity:.6;margin:0 0 16px;min-height:1.5em}
+#rd-meter{height:6px;background:var(--panel);border-radius:3px;overflow:hidden}
+#rd-meter i{display:block;height:100%;width:0;background:var(--hot);transition:width .25s}
+#rd-pos{font-size:13px;margin:7px 0 14px;font-variant-numeric:tabular-nums}
+#rd-keys{text-align:center;padding:11px;border:1px dashed var(--line);border-radius:10px;
+         color:var(--dim);font-size:15px;margin-bottom:14px}
+#rd-keys b{color:var(--hot)}
+#rd-ctl{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+#rd-ctl label{color:var(--dim);font-size:14px;display:flex;gap:6px;align-items:center}
+#rd-ctl select{background:var(--panel);color:var(--ink);border:1px solid var(--line);
+               border-radius:7px;padding:7px 9px;font-size:14px}
+#read.reading #rd-play{min-width:116px}

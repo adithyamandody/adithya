@@ -33,6 +33,7 @@
     <button data-view="compose" class="on">Compose</button>
     <button data-view="output">Output</button>
     <button data-view="meds">Meds</button>
+    <button data-view="read">Read</button>
     <button data-view="compare">Compare</button>
     <button data-view="settings">Settings</button>
     <button id="help-open" title="How do I use this?">?</button>
@@ -119,6 +120,46 @@
     <button id="med-save">Save</button>
     <button id="med-test" class="ghost">Test the reminder</button>
   </details>
+</section>
+
+<!-- ───────────────────────── reader ───────────────────────── -->
+<section id="read" class="view">
+  <div id="rd-empty">
+    <h3>Read a book with the switch</h3>
+    <p class="muted">Open a PDF or a text file. It reads itself aloud, one
+       sentence at a time, and the switches control it.</p>
+    <p>
+      <input type="file" id="rd-file" accept=".pdf,.txt,text/plain,application/pdf">
+    </p>
+    <details>
+      <summary>Or paste the text instead</summary>
+      <textarea id="rd-paste" rows="6" spellcheck="false"
+        placeholder="Paste anything to read…"></textarea>
+      <button id="rd-paste-go">Read this</button>
+    </details>
+    <p id="rd-status" class="muted"></p>
+  </div>
+
+  <div id="rd-live" hidden>
+    <div id="rd-title" class="muted"></div>
+    <p id="rd-now" class="ml"></p>
+    <p id="rd-next" class="muted"></p>
+
+    <div id="rd-meter"><i id="rd-bar"></i></div>
+    <div id="rd-pos" class="muted"></div>
+
+    <div id="rd-keys">
+      <b>press</b> = play / pause &nbsp;·&nbsp; <b>backspace</b> = back one sentence
+    </div>
+
+    <div id="rd-ctl">
+      <button id="rd-play">▶ Play</button>
+      <button id="rd-back" class="ghost">↩ Back</button>
+      <button id="rd-fwd" class="ghost">↪ Skip</button>
+      <label>Pace <select id="rd-pace"></select></label>
+      <button id="rd-close" class="ghost">Close book</button>
+    </div>
+  </div>
 </section>
 
 <!-- ───────────────────────── output ───────────────────────── -->

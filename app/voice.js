@@ -406,28 +406,63 @@ export async function openVoiceInstall() {
   try { await tts.openInstall(); return true; } catch { return false; }
 }
 
-async function speakNative(text, lang) {
+async function speakNative(text, lang, rate = 1) {
   const tts = nativeTTS();
   if (!tts) throw new Error('native speech plugin not available');
   await tts.stop().catch(() => {});       // cut off whatever is mid-sentence
-  await tts.speak({ text, lang: BCP47[lang] || BCP47.ml, rate: 1, pitch: 1, volume: 1 });
+  await tts.speak({ text, lang: BCP47[lang] || BCP47.ml, rate, pitch: 1, volume: 1 });
   return { provider: 'system', cached: false, voice: BCP47[lang] || BCP47.ml, backend: 'native' };
 }
 
-function speakWeb(text, lang) {
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = BCP47[lang] || BCP47.ml;
-  const v = speechSynthesis.getVoices().find(x => x.lang.toLowerCase().startsWith(lang === 'en' ? 'en' : 'ml'));
-  if (v) u.voice = v;
-  speechSynthesis.speak(u);
-  return { provider: 'system', cached: false, voice: v ? v.name : null, backend: 'web' };
+/* Resolves when the speech FINISHES, not when it is queued.
+ *
+ * speechSynthesis.speak() returns immediately, so an awaited call that
+ * resolved there would let the book reader run its whole loop in one go —
+ * queueing every sentence at once and making pause meaningless. The reader
+ * needs to know when a sentence actually ended. */
+function speakWeb(text, lang, rate = 1) {
+  return new Promise(resolve => {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = rate;
+    u.lang = BCP47[lang] || BCP47.ml;
+    const v = speechSynthesis.getVoices().find(x => x.lang.toLowerCase().startsWith(lang === 'en' ? 'en' : 'ml'));
+    if (v) u.voice = v;
+
+    const result = { provider: 'system', cached: false, voice: v ? v.name : null, backend: 'web' };
+    let settled = false;
+    const finish = () => { if (settled) return; settled = true; resolve(result); };
+
+    u.onend = finish;
+    u.onerror = finish;              // a failed utterance must not hang the reader
+    speechSynthesis.speak(u);
+
+    /* Some engines never fire onend — notably after a cancel(). Cap the wait
+       by length so one sentence cannot stall a whole book. */
+    setTimeout(finish, 3000 + (text.length * 140) / Math.max(0.3, rate));
+  });
 }
 
-async function speakSystem(text, lang) {
+/** Stop whatever is speaking, by whichever route. Pause has to be immediate:
+ *  a user who presses to stop and keeps hearing the sentence will press
+ *  again, and now two commands are queued. */
+export function stopSpeaking() {
+  try {
+    const tts = nativeTTS();
+    if (tts && typeof tts.stop === 'function') tts.stop().catch(() => {});
+  } catch {}
+  try {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) speechSynthesis.cancel();
+  } catch {}
+  try {
+    if (current) { current.pause(); current.currentTime = 0; }   // a cached cloud clip
+  } catch {}
+}
+
+async function speakSystem(text, lang, rate = 1) {
   switch (pickBackend(typeof window !== 'undefined' ? window : null)) {
-    case 'native': return speakNative(text, lang);
-    case 'web':    return speakWeb(text, lang);
+    case 'native': return speakNative(text, lang, rate);
+    case 'web':    return speakWeb(text, lang, rate);
     default:
       throw new Error('this build cannot reach the device voice — open the web '
                     + 'app in Chrome, or install the APK that includes the '
@@ -438,8 +473,11 @@ async function speakSystem(text, lang) {
 /**
  * Say it. Cache first, network only if needed, system voice if anything fails.
  * `prefetch` renders and caches without playing — used to warm the phrase list.
+ * `rate` is the speaking speed for the book reader. It applies to the DEVICE
+ * voice only: a cloud clip is rendered at the provider's own pace and cached
+ * as audio, so it cannot be re-timed afterwards.
  */
-export async function say(text, settings, { prefetch = false } = {}) {
+export async function say(text, settings, { prefetch = false, rate = 1 } = {}) {
   text = (text || '').trim();
   if (!text) return { ok: false, why: 'nothing to say' };
 
@@ -447,7 +485,7 @@ export async function say(text, settings, { prefetch = false } = {}) {
 
   if (provider.id === 'system') {
     if (prefetch) return { ok: true, provider: 'system', cached: false, prefetch: true };
-    try { return { ok: true, ...(await speakSystem(text, lang)) }; }
+    try { return { ok: true, ...(await speakSystem(text, lang, rate)) }; }
     catch (e) { return { ok: false, why: e.message }; }
   }
 
@@ -472,7 +510,7 @@ export async function say(text, settings, { prefetch = false } = {}) {
        that cannot fail. */
     if (prefetch) return { ok: false, why: e.message, provider: provider.id };
     try {
-      const r = await speakSystem(text, lang);
+      const r = await speakSystem(text, lang, rate);
       return { ok: true, ...r, fellBack: true, why: e.message };
     } catch (e2) {
       return { ok: false, why: `${e.message}; and no system voice (${e2.message})` };
